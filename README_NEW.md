@@ -3,12 +3,14 @@
 > Outstanding web development assignment showcasing modern technologies and cloud deployment
 
 ## ✨ Live Demo
+
 🌐 **Website:** [techcorp-solutions.vercel.app](https://techcorp-solutions.vercel.app)  
 🛠️ **Admin Panel:** [techcorp-solutions.vercel.app/admin.php](https://techcorp-solutions.vercel.app/admin.php)
 
 ## 🎯 Project Overview
 
 A comprehensive business website built with modern web technologies, featuring:
+
 - **Responsive Design** - Perfect on all devices
 - **Contact Management** - Database-driven contact form
 - **Admin Panel** - Content management system
@@ -18,6 +20,7 @@ A comprehensive business website built with modern web technologies, featuring:
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **HTML5** - Semantic structure
 - **CSS3** - Modern styling with Flexbox/Grid
 - **Bootstrap 5** - Responsive framework
@@ -25,6 +28,7 @@ A comprehensive business website built with modern web technologies, featuring:
 - **FontAwesome** - Professional icons
 
 ### Backend
+
 - **PHP 8.2** - Server-side processing
 - **PostgreSQL** - Supabase database
 - **Vercel** - Serverless hosting
@@ -48,6 +52,7 @@ techcorp-solutions/
 ## 🚀 Features
 
 ### ✅ Homepage
+
 - Hero section with call-to-action
 - Services showcase
 - Portfolio gallery
@@ -55,18 +60,21 @@ techcorp-solutions/
 - Contact information
 
 ### ✅ Contact System
+
 - Responsive contact form
 - Real-time validation
 - Database storage
 - Admin notifications
 
 ### ✅ Admin Panel
+
 - Secure login system
 - Contact management
 - Testimonial management
 - Dashboard statistics
 
 ### ✅ Technical Excellence
+
 - Mobile-first responsive design
 - Cross-browser compatibility
 - SEO optimized
@@ -76,6 +84,7 @@ techcorp-solutions/
 ## 🗄️ Database Schema
 
 ### Tables:
+
 - **contacts** - Form submissions
 - **testimonials** - Client reviews
 - **services** - Service offerings
@@ -86,11 +95,13 @@ techcorp-solutions/
 ## 🔧 Local Development
 
 ### Prerequisites
+
 - PHP 8.0+
 - PostgreSQL or MySQL
 - Web server (Apache/Nginx)
 
 ### Setup
+
 1. Clone repository
 2. Configure database in `config/database.php`
 3. Run `setup.php` to initialize database
@@ -99,6 +110,7 @@ techcorp-solutions/
 ## ☁️ Cloud Deployment
 
 ### Vercel + Supabase
+
 1. Fork/clone this repository
 2. Create Supabase project
 3. Run SQL from `docs/supabase-setup.sql`
@@ -112,10 +124,11 @@ Detailed guide: [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
 ## 🔐 Admin Access
 
 **Default Login:**
+
 - Username: `admin`
 - Password: `admin123`
 
-*Change credentials in production*
+_Change credentials in production_
 
 ## 📊 Performance
 
@@ -143,6 +156,7 @@ Detailed guide: [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
 ## 📞 Support
 
 For questions or issues:
+
 - Check [docs/](docs/) folder for guides
 - Review configuration in `config/database.php`
 - Verify environment variables in deployment

@@ -1,0 +1,3 @@
+# This file forces the project to use Supabase instead of local MySQL
+
+# Since XAMPP is not available, we'll use Supabase for all testing

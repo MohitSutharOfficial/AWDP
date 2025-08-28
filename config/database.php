@@ -11,27 +11,54 @@ class Database {
     private $database;
     private $username;
     private $password;
+    private $port;
+    private $driver;
     private $connection;
     
     public function __construct() {
-        // Database configuration - Update these settings for your environment
-        $this->host = 'localhost';
-        $this->database = 'techcorp_db';
-        $this->username = 'root';
-        $this->password = '';
-        
-        // For production/hosting, uncomment and use these settings:
-        // $this->host = 'your_host';
-        // $this->database = 'your_database';
-        // $this->username = 'your_username';
-        // $this->password = 'your_password';
+        // Detect environment and use appropriate database
+        if ($this->isVercelEnvironment() || $this->useSupabase()) {
+            // Supabase PostgreSQL configuration
+            $this->host = 'db.brdavdukxvilpdzgbsqd.supabase.co';
+            $this->database = 'postgres';
+            $this->username = 'postgres';
+            $this->password = getenv('SUPABASE_PASSWORD') ?: 'rsMwRvhAs3qxIWQ8';
+            $this->port = 5432;
+            $this->driver = 'pgsql';
+        } else {
+            // Local MySQL configuration (XAMPP)
+            $this->host = 'localhost';
+            $this->database = 'techcorp_db';
+            $this->username = 'root';
+            $this->password = '';
+            $this->port = 3306;
+            $this->driver = 'mysql';
+        }
         
         $this->connect();
     }
     
+    private function isVercelEnvironment() {
+        return isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']);
+    }
+    
+    private function useSupabase() {
+        // Check if we should use Supabase (environment variable or manual override)
+        return getenv('USE_SUPABASE') === 'true' || 
+               isset($_ENV['USE_SUPABASE']) ||
+               file_exists(__DIR__ . '/.use-supabase');
+    }
+    
     private function connect() {
         try {
-            $dsn = "mysql:host={$this->host};dbname={$this->database};charset=utf8mb4";
+            if ($this->driver === 'pgsql') {
+                // PostgreSQL connection for Supabase
+                $dsn = "pgsql:host={$this->host};port={$this->port};dbname={$this->database};sslmode=require";
+            } else {
+                // MySQL connection for local development
+                $dsn = "mysql:host={$this->host};port={$this->port};dbname={$this->database};charset=utf8mb4";
+            }
+            
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -92,6 +119,21 @@ class Database {
     }
     
     public function createTables() {
+        $isPostgreSQL = $this->driver === 'pgsql';
+        
+        if ($isPostgreSQL) {
+            // PostgreSQL table creation (for Supabase)
+            $this->createPostgreSQLTables();
+        } else {
+            // MySQL table creation (for local XAMPP)
+            $this->createMySQLTables();
+        }
+        
+        // Insert sample data (works for both databases)
+        $this->insertSampleData();
+    }
+    
+    private function createMySQLTables() {
         $tables = [
             // Contacts table
             "CREATE TABLE IF NOT EXISTS contacts (
@@ -199,7 +241,104 @@ class Database {
             try {
                 $this->connection->exec($sql);
             } catch (PDOException $e) {
-                throw new Exception("Failed to create table: " . $e->getMessage());
+                throw new Exception("Failed to create MySQL table: " . $e->getMessage());
+            }
+        }
+    }
+    
+    private function createPostgreSQLTables() {
+        $tables = [
+            // Contacts table
+            "CREATE TABLE IF NOT EXISTS contacts (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                phone VARCHAR(20),
+                company VARCHAR(255),
+                subject VARCHAR(255),
+                message TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status VARCHAR(20) DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied'))
+            )",
+            
+            // Testimonials table
+            "CREATE TABLE IF NOT EXISTS testimonials (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                company VARCHAR(255),
+                position VARCHAR(255),
+                testimonial TEXT NOT NULL,
+                rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+                image_url VARCHAR(500),
+                is_featured BOOLEAN DEFAULT FALSE,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            // Services table
+            "CREATE TABLE IF NOT EXISTS services (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                icon VARCHAR(100),
+                features JSONB,
+                price_range VARCHAR(100),
+                is_active BOOLEAN DEFAULT TRUE,
+                sort_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            // Projects table
+            "CREATE TABLE IF NOT EXISTS projects (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                technologies JSONB,
+                image_url VARCHAR(500),
+                project_url VARCHAR(500),
+                github_url VARCHAR(500),
+                client_name VARCHAR(255),
+                completion_date DATE,
+                is_featured BOOLEAN DEFAULT FALSE,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            // Blog posts table
+            "CREATE TABLE IF NOT EXISTS blog_posts (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                slug VARCHAR(255) UNIQUE NOT NULL,
+                excerpt TEXT,
+                content TEXT,
+                author VARCHAR(255),
+                featured_image VARCHAR(500),
+                tags JSONB,
+                is_published BOOLEAN DEFAULT FALSE,
+                published_at TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            // Newsletter subscribers table
+            "CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                name VARCHAR(255),
+                is_active BOOLEAN DEFAULT TRUE,
+                subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                unsubscribed_at TIMESTAMP NULL
+            )"
+        ];
+        
+        foreach ($tables as $sql) {
+            try {
+                $this->connection->exec($sql);
+            } catch (PDOException $e) {
+                throw new Exception("Failed to create PostgreSQL table: " . $e->getMessage());
             }
         }
         
