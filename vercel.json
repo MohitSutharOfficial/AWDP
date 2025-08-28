@@ -1,39 +1,43 @@
 {
   "version": 2,
   "name": "techcorp-solutions",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "@vercel/node@18"
+    },
+    "*.php": {
+      "runtime": "vercel-php@0.6.0"
+    }
+  },
   "builds": [
     {
       "src": "index.html",
       "use": "@vercel/static"
     },
     {
-      "src": "404.html", 
+      "src": "assets/**",
       "use": "@vercel/static"
     },
     {
-      "src": "assets/**",
-      "use": "@vercel/static"
+      "src": "*.php",
+      "use": "vercel-php@0.6.0"
     }
   ],
   "routes": [
     {
-      "src": "/",
-      "dest": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
     {
-      "src": "/index",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/home",
-      "dest": "/index.html"
+      "src": "/(.*\\.php)",
+      "dest": "/$1"
     },
     {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/404.html"
+      "dest": "/index.html"
     }
   ],
   "headers": [
@@ -62,23 +66,6 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/contact",
-      "destination": "/contact.php",
-      "permanent": false
-    },
-    {
-      "source": "/testimonials", 
-      "destination": "/testimonials.php",
-      "permanent": false
-    },
-    {
-      "source": "/admin",
-      "destination": "/admin.php", 
-      "permanent": false
     }
   ]
 }
