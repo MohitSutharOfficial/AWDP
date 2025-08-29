@@ -6,11 +6,14 @@
  * Visit: http://yoursite.com/setup.php
  */
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/config/database.php';
 
 $messages = [];
 
 try {
+    // Initialize database connection
+    $db = new Database();
+    
     // Create tables
     $db->createTables();
     $messages[] = ['success', 'Database tables created successfully!'];

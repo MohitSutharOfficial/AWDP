@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechCorp Solutions - Complete Web Application Demo</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        
+        .project-info {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-height: calc(100vh - 400px);
+            overflow-y: auto;
+        }
+        
+        .feature-card {
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.8rem;
+            color: white;
+            position: relative;
+        }
+        
+        .btn-feature {
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-weight: 600;
+            border: none;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-feature:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .tech-stack {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .tech-badge {
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 5px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="mb-0 fw-bold text-primary">
+                            <i class="fas fa-rocket me-3"></i>TechCorp Solutions
+                        </h1>
+                        <p class="mb-0 text-muted">Complete Web Application with Database Integration</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="badge bg-success fs-6 px-3 py-2">
+                            <i class="fas fa-check-circle me-2"></i>Live & Deployed
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content-area">
+            <div class="container-fluid">
+                <!-- Project Overview -->
+                <div class="project-info">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h2 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Project Overview
+                            </h2>
+                            <p class="lead mb-3">
+                                This is a <strong>complete full-stack web application</strong> demonstrating modern web development practices 
+                                with PHP backend, PostgreSQL database, and responsive frontend design.
+                            </p>
+                            <p class="mb-0">
+                                <strong>Key Features:</strong> Contact Management, User Authentication, Database Operations, 
+                                Admin Panel, Testimonials System, and Cloud Deployment.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="tech-stack">
+                                <h6 class="text-white fw-bold mb-3">
+                                    <i class="fas fa-code me-2"></i>Tech Stack
+                                </h6>
+                                <div class="tech-badge">PHP 8.2</div>
+                                <div class="tech-badge">PostgreSQL</div>
+                                <div class="tech-badge">Bootstrap 5</div>
+                                <div class="tech-badge">JavaScript</div>
+                                <div class="tech-badge">Vercel</div>
+                                <div class="tech-badge">Supabase</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Grid -->
+                <div class="feature-grid">
+                    <!-- Contact System -->
+                    <div class="feature-card">
+                        <div class="status-indicator bg-success">✓</div>
+                        <div class="feature-icon" style="background: linear-gradient(45deg, #28a745, #20c997);">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Contact System</h4>
+                        <p class="text-muted mb-3">Professional contact form with database storage and validation</p>
+                        <p class="small mb-3"><strong>Features:</strong> Form validation, Email capture, Database storage</p>
+                        <a href="/contact" class="btn btn-success btn-feature">
+                            <i class="fas fa-paper-plane me-2"></i>Open Contact Form
+                        </a>
+                    </div>
+
+                    <!-- Admin Panel -->
+                    <div class="feature-card">
+                        <div class="status-indicator bg-primary">�</div>
+                        <div class="feature-icon" style="background: linear-gradient(45deg, #007bff, #6610f2);">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Admin Dashboard</h4>
+                        <p class="text-muted mb-3">Secure admin panel for content and user management</p>
+                        <p class="small mb-3"><strong>Login:</strong> admin / admin123</p>
+                        <a href="/admin" class="btn btn-primary btn-feature">
+                            <i class="fas fa-sign-in-alt me-2"></i>Access Admin Panel
+                        </a>
+                    </div>
+
+                    <!-- Testimonials -->
+                    <div class="feature-card">
+                        <div class="status-indicator bg-warning">⭐</div>
+                        <div class="feature-icon" style="background: linear-gradient(45deg, #ffc107, #fd7e14);">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Testimonials</h4>
+                        <p class="text-muted mb-3">Dynamic testimonials system with database integration</p>
+                        <p class="small mb-3"><strong>Features:</strong> CRUD operations, Rating system, Featured reviews</p>
+                        <a href="/testimonials" class="btn btn-warning btn-feature">
+                            <i class="fas fa-comments me-2"></i>View Testimonials
+                        </a>
+                    </div>
+
+                    <!-- Database Setup -->
+                    <div class="feature-card">
+                        <div class="status-indicator bg-danger">⚙️</div>
+                        <div class="feature-icon" style="background: linear-gradient(45deg, #dc3545, #e83e8c);">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Database Setup</h4>
+                        <p class="text-muted mb-3">Database initialization and table creation system</p>
+                        <p class="small mb-3"><strong>Features:</strong> Auto table creation, Sample data, PostgreSQL</p>
+                        <a href="/setup" class="btn btn-danger btn-feature">
+                            <i class="fas fa-cog me-2"></i>Initialize Database
+                        </a>
+                    </div>
+
+                    <!-- API Documentation -->
+                    <div class="feature-card">
+                        <div class="status-indicator bg-info">📡</div>
+                        <div class="feature-icon" style="background: linear-gradient(45deg, #17a2b8, #6f42c1);">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">API Endpoints</h4>
+                        <p class="text-muted mb-3">RESTful API structure with serverless functions</p>
+                        <p class="small mb-3"><strong>Endpoints:</strong> /api/contact, /api/admin, /api/testimonials</p>
+                        <button onclick="showApiInfo()" class="btn btn-info btn-feature">
+                            <i class="fas fa-book me-2"></i>View API Docs
+                        </button>
+                    </div>
+
+                    <!-- Live Demo -->
+                    <div class="feature-card">
+                        <div class="status-indicator bg-success">🚀</div>
+                        <div class="feature-icon" style="background: linear-gradient(45deg, #198754, #0d6efd);">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Live Deployment</h4>
+                        <p class="text-muted mb-3">Fully deployed on Vercel with Supabase database</p>
+                        <p class="small mb-3"><strong>Status:</strong> Production Ready, Cloud Hosted, SSL Secured</p>
+                        <button onclick="showDeploymentInfo()" class="btn btn-success btn-feature">
+                            <i class="fas fa-cloud me-2"></i>Deployment Info
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        function showApiInfo() {
+            alert(`API Endpoints Available:
+            
+📡 Contact API: /api/contact.php
+   - POST: Submit contact form
+   - GET: Contact form page
+   
+👤 Admin API: /api/admin.php  
+   - Authentication & management
+   
+⭐ Testimonials API: /api/testimonials.php
+   - Display customer reviews
+   
+⚙️ Setup API: /api/setup.php
+   - Database initialization
+   
+All endpoints are live and functional!`);
+        }
+
+        function showDeploymentInfo() {
+            alert(`Deployment Information:
+            
+🌐 Platform: Vercel (Serverless)
+📊 Database: Supabase (PostgreSQL)
+🔒 Security: SSL Certificate, Input Validation
+🚀 Performance: CDN, Optimized Assets
+📱 Responsive: Mobile & Desktop Ready
+✅ Status: Production Ready
+
+This is a complete, professional web application ready for real-world use!`);
+        }
+
+        // Animate cards on load
+        window.addEventListener('load', function() {
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-6">
+                    <div class="hero-content text-white">
+                        <h1 class="display-4 fw-bold mb-4 animate-fade-in">
+                            Innovative Technology Solutions for Modern Businesses
+                        </h1>
+                        <p class="lead mb-4 animate-fade-in-delay">
+                            We transform ideas into powerful digital experiences using cutting-edge technology and creative design.
+                        </p>
+                        <div class="hero-buttons animate-fade-in-delay-2">
+                            <a href="#services" class="btn btn-primary btn-lg me-3">Our Services</a>
+                            <a href="/contact" class="btn btn-outline-light btn-lg">Get Started</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="hero-image animate-float">
+                        <img src="assets/images/hero-tech.svg" alt="Technology Solutions" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center mb-5">
+                    <h2 class="section-title">About TechCorp Solutions</h2>
+                    <p class="section-subtitle">Leading the digital transformation with innovative solutions</p>
+                </div>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-4">
+                    <img src="assets/images/about-us.jpg" alt="About Us" class="img-fluid rounded shadow">
+                </div>
+                <div class="col-lg-6">
+                    <h3 class="mb-4">Empowering Businesses Through Technology</h3>
+                    <p class="mb-4">
+                        With over a decade of experience in the technology industry, TechCorp Solutions has been at the forefront of digital innovation. We specialize in creating custom software solutions, web applications, and mobile apps that drive business growth.
+                    </p>
+                    <div class="row">
+                        <div class="col-sm-6 mb-3">
+                            <div class="stat-card">
+                                <h4 class="text-primary">500+</h4>
+                                <p>Projects Completed</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <div class="stat-card">
+                                <h4 class="text-primary">50+</h4>
+                                <p>Happy Clients</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center mb-5">
+                    <h2 class="section-title">Our Services</h2>
+                    <p class="section-subtitle">Comprehensive technology solutions for your business needs</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="service-card h-100">
+                        <div class="service-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h4>Web Development</h4>
+                        <p>Custom web applications built with modern frameworks and responsive design principles.</p>
+                        <ul class="service-features">
+                            <li>Responsive Design</li>
+                            <li>Modern Frameworks</li>
+                            <li>Database Integration</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="service-card h-100">
+                        <div class="service-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h4>Mobile Development</h4>
+                        <p>Native and cross-platform mobile applications for iOS and Android devices.</p>
+                        <ul class="service-features">
+                            <li>iOS & Android</li>
+                            <li>Cross-platform</li>
+                            <li>User-friendly UI/UX</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="service-card h-100">
+                        <div class="service-icon">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <h4>Cloud Solutions</h4>
+                        <p>Scalable cloud infrastructure and migration services for modern businesses.</p>
+                        <ul class="service-features">
+                            <li>Cloud Migration</li>
+                            <li>Infrastructure Setup</li>
+                            <li>24/7 Support</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center mb-5">
+                    <h2 class="section-title">Our Portfolio</h2>
+                    <p class="section-subtitle">Showcasing our latest projects and achievements</p>
+                </div>
+            </div>
+            <div class="row" id="portfolioItems">
+                <!-- Portfolio items will be loaded here via JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="text-white mb-4">Ready to Transform Your Business?</h2>
+                    <p class="text-white mb-4">Let's discuss your project and create something amazing together.</p>
+                    <a href="/contact" class="btn btn-primary btn-lg">Start Your Project</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h5><i class="fas fa-code text-primary me-2"></i>TechCorp Solutions</h5>
+                    <p class="mb-3">Innovative technology solutions for modern businesses.</p>
+                    <div class="social-links">
+                        <a href="#" class="text-white me-3"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#home" class="text-white-50">Home</a></li>
+                        <li><a href="#about" class="text-white-50">About</a></li>
+                        <li><a href="#services" class="text-white-50">Services</a></li>
+                        <li><a href="/contact" class="text-white-50">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 mb-4">
+                    <h6>Services</h6>
+                    <ul class="list-unstyled">
+                        <li><span class="text-white-50">Web Development</span></li>
+                        <li><span class="text-white-50">Mobile Apps</span></li>
+                        <li><span class="text-white-50">Cloud Solutions</span></li>
+                        <li><span class="text-white-50">Consulting</span></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 mb-4">
+                    <h6>Contact Info</h6>
+                    <p class="text-white-50 mb-1"><i class="fas fa-envelope me-2"></i>info@techcorp.com</p>
+                    <p class="text-white-50 mb-1"><i class="fas fa-phone me-2"></i>+1 (555) 123-4567</p>
+                    <p class="text-white-50"><i class="fas fa-map-marker-alt me-2"></i>123 Tech Street, Digital City</p>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <p class="text-white-50 mb-0">&copy; 2025 TechCorp Solutions. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

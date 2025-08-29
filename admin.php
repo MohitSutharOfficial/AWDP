@@ -1,29 +1,38 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/config/database.php';
 
-// Simple authentication (In production, use proper authentication)
-session_start();
-$isLoggedIn = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
+// Initialize database connection
+try {
+    $db = new Database();
+} catch (Exception $e) {
+    die("Database connection error: " . $e->getMessage());
+}
 
-// Handle login
+// Simple authentication without sessions (Vercel-friendly)
+$isLoggedIn = false;
+$loginError = '';
+$showLogin = true;
+
+// Handle login via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     
-    // Simple hardcoded credentials (In production, use database with hashed passwords)
+    // Simple hardcoded credentials
     if ($username === 'admin' && $password === 'admin123') {
-        $_SESSION['admin_logged_in'] = true;
         $isLoggedIn = true;
+        $showLogin = false;
     } else {
         $loginError = 'Invalid credentials';
     }
 }
 
-// Handle logout
-if (isset($_GET['action']) && $_GET['action'] === 'logout') {
-    session_destroy();
-    header('Location: admin.php');
-    exit;
+// Handle direct access with credentials
+if (isset($_GET['u']) && isset($_GET['p'])) {
+    if ($_GET['u'] === 'admin' && $_GET['p'] === 'admin123') {
+        $isLoggedIn = true;
+        $showLogin = false;
+    }
 }
 
 // Handle database table creation

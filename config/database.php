@@ -1,7 +1,7 @@
 <?php
 /**
  * Database Configuration for TechCorp Solutions
- * Simple and clean database connection for Supabase PostgreSQL
+ * Railway-compatible database connection with environment variables
  */
 
 class Database {
@@ -13,10 +13,26 @@ class Database {
     
     private function connect() {
         try {
-            // Supabase PostgreSQL configuration
-            $dsn = "pgsql:host=db.brdavdukxvilpdzgbsqd.supabase.co;port=5432;dbname=postgres;sslmode=require";
-            $username = 'postgres';
-            $password = 'rsMwRvhAs3qxIWQ8';
+            // Railway provides DATABASE_URL environment variable
+            $databaseUrl = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL');
+            
+            if ($databaseUrl) {
+                // Parse Railway DATABASE_URL
+                $dbParts = parse_url($databaseUrl);
+                $dsn = sprintf(
+                    "pgsql:host=%s;port=%d;dbname=%s;sslmode=require",
+                    $dbParts['host'],
+                    $dbParts['port'],
+                    ltrim($dbParts['path'], '/')
+                );
+                $username = $dbParts['user'];
+                $password = $dbParts['pass'];
+            } else {
+                // Fallback to Supabase or manual configuration
+                $dsn = "pgsql:host=db.brdavdukxvilpdzgbsqd.supabase.co;port=5432;dbname=postgres;sslmode=require";
+                $username = 'postgres';
+                $password = 'rsMwRvhAs3qxIWQ8';
+            }
             
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -26,7 +42,9 @@ class Database {
             
             $this->connection = new PDO($dsn, $username, $password, $options);
         } catch (PDOException $e) {
-            die("Database connection failed: " . $e->getMessage());
+            // More detailed error logging for Railway
+            error_log("Database connection failed: " . $e->getMessage());
+            die("Database connection failed. Please check your configuration.");
         }
     }
     

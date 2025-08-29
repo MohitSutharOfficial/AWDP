@@ -1,5 +1,21 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/config/database.php';
+
+// Initialize database connection
+try {
+    $db = new Database();
+} catch (Exception $e) {
+    die("Database connection error: " . $e->getMessage());
+}
+
+// Helper functions
+function sanitizeInput($input) {
+    return htmlspecialchars(strip_tags(trim($input)), ENT_QUOTES, 'UTF-8');
+}
+
+function validateEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
 
 $success = false;
 $error = '';

@@ -2,20 +2,24 @@
   "version": 2,
   "routes": [
     {
-      "src": "/contact",
-      "dest": "/api/contact.php"
-    },
-    {
-      "src": "/testimonials", 
-      "dest": "/api/testimonials.php"
-    },
-    {
       "src": "/admin",
-      "dest": "/api/admin.php"
+      "dest": "/admin.php"
+    },
+    {
+      "src": "/contact",
+      "dest": "/contact.php"
+    },
+    {
+      "src": "/testimonials",
+      "dest": "/testimonials.php"
     },
     {
       "src": "/setup",
-      "dest": "/api/setup.php"
+      "dest": "/setup.php"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/public/assets/$1"
     },
     {
       "src": "/",

@@ -1,1 +1,26 @@
+# Railway specific
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+
+# Dependencies
+node_modules/
+vendor/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Vercel (keep for comparison)
 .vercel
+
+# Temporary files
+tmp/
+temp/

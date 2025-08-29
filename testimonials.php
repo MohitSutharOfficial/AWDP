@@ -1,8 +1,12 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/config/database.php';
 
-// Get testimonials from databasep
-require_once '../config/database.php';
+// Initialize database connection
+try {
+    $db = new Database();
+} catch (Exception $e) {
+    die("Database connection error: " . $e->getMessage());
+}
 
 // Fetch testimonials from database
 try {

@@ -1,0 +1,26 @@
+version: "2"
+
+services:
+  web:
+    build:
+      context: .
+    env:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    healthcheck:
+      path: /
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+  database:
+    image: postgres:15
+    env:
+      - POSTGRES_DB=techcorp
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
