@@ -42,22 +42,23 @@
    - Add your custom domain
    - Update DNS records
 
-### Project Structure
+### Clean Project Structure
 
 ```
-├── public/              # Static files + entry point
-│   ├── index.html      # Homepage
+├── public/              # Entry point for Railway
 │   ├── index.php       # Railway router
 │   └── assets/         # CSS, JS, images
 ├── config/
 │   └── database.php    # Railway-compatible DB config
+├── index.html          # Homepage
 ├── admin.php           # Admin panel
 ├── contact.php         # Contact form
 ├── testimonials.php    # Testimonials page
 ├── setup.php          # Database initialization
 ├── composer.json       # PHP dependencies
 ├── Procfile           # Railway start command
-└── railway.toml       # Railway configuration
+├── railway.toml       # Railway configuration
+└── .env.example       # Environment variables template
 
 ```
 

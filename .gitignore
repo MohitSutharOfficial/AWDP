@@ -1,4 +1,4 @@
-# Railway specific
+# Environment variables
 .env
 .env.local
 .env.production
@@ -7,7 +7,6 @@
 *.log
 
 # Dependencies
-node_modules/
 vendor/
 
 # OS generated files
@@ -18,9 +17,10 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Vercel (keep for comparison)
-.vercel
-
 # Temporary files
 tmp/
 temp/
+
+# Development files
+test*.php
+debug*.php

@@ -1,6 +1,6 @@
 <?php
-// Railway-compatible entry point
-// This file routes requests to the appropriate PHP files
+// Railway-compatible entry point for TechCorp Solutions
+// Clean and simple routing for PHP application
 
 $request = $_SERVER['REQUEST_URI'];
 $path = parse_url($request, PHP_URL_PATH);
@@ -11,44 +11,45 @@ switch($path) {
     case '':
     case 'index':
     case 'index.html':
-        readfile('./index.html');
+        // Serve homepage
+        readfile('../index.html');
         break;
         
     case 'admin':
-        include './admin.php';
+        // Include admin panel
+        include '../admin.php';
         break;
         
     case 'contact':
-        include './contact.php';
+        // Include contact form
+        include '../contact.php';
         break;
         
     case 'testimonials':
-        include './testimonials.php';
+        // Include testimonials page
+        include '../testimonials.php';
         break;
         
     case 'setup':
-        include './setup.php';
+        // Include database setup
+        include '../setup.php';
         break;
         
     default:
-        // Handle static files
-        $filePath = './' . $path;
-        if (file_exists($filePath) && !is_dir($filePath)) {
-            $mimeType = mime_content_type($filePath);
-            header('Content-Type: ' . $mimeType);
-            readfile($filePath);
-        } else {
-            // Try in public directory
-            $publicPath = './public/' . $path;
-            if (file_exists($publicPath) && !is_dir($publicPath)) {
-                $mimeType = mime_content_type($publicPath);
+        // Handle static files from assets
+        if (strpos($path, 'assets/') === 0) {
+            $filePath = './' . $path;
+            if (file_exists($filePath) && !is_dir($filePath)) {
+                $mimeType = mime_content_type($filePath);
                 header('Content-Type: ' . $mimeType);
-                readfile($publicPath);
-            } else {
-                http_response_code(404);
-                readfile('./public/index.html');
+                readfile($filePath);
+                exit;
             }
         }
+        
+        // 404 - redirect to homepage
+        http_response_code(404);
+        readfile('../index.html');
         break;
 }
 ?>
