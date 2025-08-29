@@ -1,0 +1,8 @@
+[phases.build]
+cmds = ["echo 'Building PHP application for Railway...'"]
+
+[phases.start]
+cmd = "php -S 0.0.0.0:$PORT -t public/"
+
+[variables]
+PHP_VERSION = "8.1"
