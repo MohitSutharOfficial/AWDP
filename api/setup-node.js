@@ -1,15 +1,5 @@
 const { Client } = require('pg');
 
-// Supabase PostgreSQL connection
-const client = new Client({
-  host: 'db.brdavdukxvilpdzgbsqd.supabase.co',
-  port: 5432,
-  database: 'postgres',
-  user: 'postgres',
-  password: 'rsMwRvhAs3qxIWQ8',
-  ssl: { rejectUnauthorized: false }
-});
-
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,7 +11,18 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'POST') {
+    let client;
     try {
+      // Create new client instance for each request
+      client = new Client({
+        host: 'db.brdavdukxvilpdzgbsqd.supabase.co',
+        port: 5432,
+        database: 'postgres',
+        user: 'postgres',
+        password: 'rsMwRvhAs3qxIWQ8',
+        ssl: { rejectUnauthorized: false }
+      });
+      
       await client.connect();
       
       // Create tables
@@ -84,6 +85,9 @@ module.exports = async (req, res) => {
       
     } catch (error) {
       console.error('Database setup error:', error);
+      if (client) {
+        try { await client.end(); } catch (e) {}
+      }
       return res.status(500).json({ 
         success: false, 
         error: 'Failed to setup database: ' + error.message 

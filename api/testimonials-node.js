@@ -1,15 +1,5 @@
 const { Client } = require('pg');
 
-// Supabase PostgreSQL connection
-const client = new Client({
-  host: 'db.brdavdukxvilpdzgbsqd.supabase.co',
-  port: 5432,
-  database: 'postgres',
-  user: 'postgres',
-  password: 'rsMwRvhAs3qxIWQ8',
-  ssl: { rejectUnauthorized: false }
-});
-
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,14 +11,28 @@ module.exports = async (req, res) => {
   }
 
   let testimonials = [];
+  let client;
   
   try {
+    // Create new client instance for each request
+    client = new Client({
+      host: 'db.brdavdukxvilpdzgbsqd.supabase.co',
+      port: 5432,
+      database: 'postgres',
+      user: 'postgres',
+      password: 'rsMwRvhAs3qxIWQ8',
+      ssl: { rejectUnauthorized: false }
+    });
+    
     await client.connect();
     const result = await client.query('SELECT * FROM testimonials WHERE is_active = true ORDER BY created_at DESC');
     testimonials = result.rows;
     await client.end();
   } catch (error) {
     console.error('Database error:', error);
+    if (client) {
+      try { await client.end(); } catch (e) {}
+    }
     // Use fallback data if database fails
     testimonials = [
       {
