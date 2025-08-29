@@ -21,6 +21,10 @@
     {
       "src": "/setup",
       "dest": "/api/setup.php"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
     }
   ]
 }
