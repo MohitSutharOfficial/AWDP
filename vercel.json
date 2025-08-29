@@ -7,7 +7,7 @@
     },
     {
       "src": "/contact",
-      "dest": "/api/contact.php"
+      "dest": "/api/contact-node.js"
     },
     {
       "src": "/testimonials", 

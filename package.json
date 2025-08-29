@@ -20,7 +20,8 @@
   "author": "TechCorp Solutions",
   "license": "MIT",
   "dependencies": {
-    "mysql2": "^3.6.0"
+    "mysql2": "^3.6.0",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "vercel": "^32.0.0"
