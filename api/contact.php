@@ -1,4 +1,11 @@
 <?php
+// Debug test for serverless function
+if (isset($_GET['test'])) {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'API is working!', 'timestamp' => date('Y-m-d H:i:s')]);
+    exit;
+}
+
 require_once '../config/database.php';
 
 $success = false;
