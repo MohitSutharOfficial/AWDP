@@ -2,31 +2,27 @@
   "version": 2,
   "routes": [
     {
-      "src": "/test",
-      "dest": "/api/test.php"
-    },
-    {
       "src": "/contact",
-      "dest": "/api/contact-node.js"
+      "dest": "/api/contact.php"
     },
     {
       "src": "/testimonials", 
-      "dest": "/api/testimonials-node.js"
+      "dest": "/api/testimonials.php"
     },
     {
       "src": "/admin",
-      "dest": "/api/admin-node.js"
+      "dest": "/api/admin.php"
     },
     {
       "src": "/setup",
-      "dest": "/api/setup-node.js"
+      "dest": "/api/setup.php"
     },
     {
       "src": "/",
       "dest": "/public/index.html"
     },
     {
-      "src": "/(.+)",
+      "src": "/(.*)",
       "dest": "/public/$1"
     }
   ]
