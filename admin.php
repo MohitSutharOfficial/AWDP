@@ -8,31 +8,38 @@ try {
     die("Database connection error: " . $e->getMessage());
 }
 
-// Simple authentication without sessions (Vercel-friendly)
-$isLoggedIn = false;
-$loginError = '';
-$showLogin = true;
+// Simple authentication (In production, use proper authentication)
+// Start session with proper error handling
+if (session_status() == PHP_SESSION_NONE) {
+    try {
+        session_start();
+    } catch (Exception $e) {
+        // If session fails, continue without session
+        error_log("Session start failed: " . $e->getMessage());
+    }
+}
 
-// Handle login via POST
+$isLoggedIn = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
+
+// Handle login
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     
-    // Simple hardcoded credentials
+    // Simple hardcoded credentials (In production, use database with hashed passwords)
     if ($username === 'admin' && $password === 'admin123') {
+        $_SESSION['admin_logged_in'] = true;
         $isLoggedIn = true;
-        $showLogin = false;
     } else {
         $loginError = 'Invalid credentials';
     }
 }
 
-// Handle direct access with credentials
-if (isset($_GET['u']) && isset($_GET['p'])) {
-    if ($_GET['u'] === 'admin' && $_GET['p'] === 'admin123') {
-        $isLoggedIn = true;
-        $showLogin = false;
-    }
+// Handle logout
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    session_destroy();
+    header('Location: admin.php');
+    exit;
 }
 
 // Handle database table creation
