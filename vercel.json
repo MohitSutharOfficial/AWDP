@@ -3,9 +3,6 @@
   "functions": {
     "api/**/*.js": {
       "runtime": "@vercel/node@18"
-    },
-    "*.php": {
-      "runtime": "now-php@1.0.0"
     }
   }
 }
