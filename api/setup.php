@@ -6,7 +6,7 @@
  * Visit: http://yoursite.com/setup.php
  */
 
-require_once 'config/database.php';
+require_once '../config/database.php';
 
 $messages = [];
 

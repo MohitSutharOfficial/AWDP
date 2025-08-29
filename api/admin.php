@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once '../config/database.php';
 
 // Simple authentication (In production, use proper authentication)
 session_start();
