@@ -1,19 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "api/contact.php": {
-      "runtime": "vercel-php@0.7.0"
-    },
-    "api/admin.php": {
-      "runtime": "vercel-php@0.7.0"
-    },
-    "api/testimonials.php": {
-      "runtime": "vercel-php@0.7.0"
-    },
-    "api/setup.php": {
-      "runtime": "vercel-php@0.7.0"
-    }
-  },
   "routes": [
     {
       "src": "/contact",
