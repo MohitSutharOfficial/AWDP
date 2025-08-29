@@ -11,15 +11,15 @@
     },
     {
       "src": "/testimonials", 
-      "dest": "/api/testimonials.php"
+      "dest": "/api/testimonials-node.js"
     },
     {
       "src": "/admin",
-      "dest": "/api/admin.php"
+      "dest": "/api/admin-node.js"
     },
     {
       "src": "/setup",
-      "dest": "/api/setup.php"
+      "dest": "/api/setup-node.js"
     },
     {
       "src": "/",
