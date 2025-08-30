@@ -527,22 +527,22 @@ if ($isLoggedIn) {
             </div>
             
             <nav>
-                <a href="#dashboard" class="admin-nav-link active" data-tab="dashboard">
+                <a href="#dashboard" class="admin-nav-link active" data-tab="dashboard" onclick="showTab('dashboard'); return false;">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     <kbd class="ms-auto">Ctrl+1</kbd>
                 </a>
-                <a href="#contacts" class="admin-nav-link" data-tab="contacts">
+                <a href="#contacts" class="admin-nav-link" data-tab="contacts" onclick="showTab('contacts'); return false;">
                     <i class="fas fa-envelope me-2"></i>Contacts
                     <?php if ($newContactCount > 0): ?>
                         <span class="badge bg-warning ms-2"><?php echo $newContactCount; ?></span>
                     <?php endif; ?>
                     <kbd class="ms-auto">Ctrl+2</kbd>
                 </a>
-                <a href="#testimonials" class="admin-nav-link" data-tab="testimonials">
+                <a href="#testimonials" class="admin-nav-link" data-tab="testimonials" onclick="showTab('testimonials'); return false;">
                     <i class="fas fa-star me-2"></i>Testimonials
                     <kbd class="ms-auto">Ctrl+3</kbd>
                 </a>
-                <a href="#database" class="admin-nav-link" data-tab="database">
+                <a href="#database" class="admin-nav-link" data-tab="database" onclick="showTab('database'); return false;">
                     <i class="fas fa-database me-2"></i>Database
                     <kbd class="ms-auto">Ctrl+4</kbd>
                 </a>
@@ -1183,6 +1183,87 @@ if ($isLoggedIn) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Simple, bulletproof navigation function
+        function showTab(tabName) {
+            console.log('showTab called with:', tabName);
+            
+            // Hide all tab content
+            const allTabs = document.querySelectorAll('.tab-content');
+            allTabs.forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.display = 'none';
+            });
+            
+            // Remove active class from all nav links
+            const allLinks = document.querySelectorAll('.admin-nav-link');
+            allLinks.forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+                selectedTab.style.display = 'block';
+                console.log('Showing tab:', tabName);
+            } else {
+                console.error('Tab not found:', tabName);
+            }
+            
+            // Add active class to clicked nav link
+            const selectedLink = document.querySelector(`[data-tab="${tabName}"]`);
+            if (selectedLink) {
+                selectedLink.classList.add('active');
+                console.log('Activated link for:', tabName);
+            }
+            
+            // Load data for specific tabs
+            if (tabName === 'contacts') {
+                loadContactsData();
+            } else if (tabName === 'testimonials') {
+                loadTestimonialsData();
+            } else if (tabName === 'database') {
+                loadDatabaseData();
+            }
+            
+            return false;
+        }
+        
+        // Load data functions
+        function loadContactsData() {
+            console.log('Loading contacts data...');
+            // Check if we need to load data
+            setTimeout(() => {
+                if (typeof refreshContacts === 'function') {
+                    const table = document.getElementById('contactsTable');
+                    if (table && table.querySelector('tbody').children.length === 0) {
+                        refreshContacts();
+                    }
+                }
+            }, 100);
+        }
+        
+        function loadTestimonialsData() {
+            console.log('Loading testimonials data...');
+            // Check if we need to load data
+            setTimeout(() => {
+                if (typeof refreshTestimonials === 'function') {
+                    const table = document.getElementById('testimonialsTable');
+                    if (table && table.querySelector('tbody').children.length === 0) {
+                        refreshTestimonials();
+                    }
+                }
+            }, 100);
+        }
+        
+        function loadDatabaseData() {
+            console.log('Loading database data...');
+            // Database tab logic here
+        }
+        
+        // Make functions globally available
+        window.showTab = showTab;
+        
         // Global variables
         let currentTab = 'dashboard';
         
@@ -2685,6 +2766,11 @@ if ($isLoggedIn) {
         }
         
         .tab-content.active {
+            display: block !important;
+        }
+        
+        /* Ensure dashboard is visible by default */
+        #dashboard.tab-content {
             display: block;
         }
         
