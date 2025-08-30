@@ -6,43 +6,7 @@
 
 // Load environment variables from .env file if it exists
 function loadEnv($path) {
-                  // Testimonials table (SQLite)
-                     // Testimonials table (PostgreSQL)
-                "CREATE TABLE IF NOT EXISTS testimonials (
-                    id SERIAL PRIMARY KEY,
-                    name VARCHAR(255) NOT NULL,
-                    company VARCHAR(255),
-                    position VARCHAR(255),
-                    testimonial TEXT NOT NULL,
-                    rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
-                    image_url VARCHAR(500),
-                    is_featured BOOLEAN DEFAULT false,
-                    is_active BOOLEAN DEFAULT true,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )",
-                
-                // Add indexes for testimonials (PostgreSQL)
-                "CREATE INDEX IF NOT EXISTS idx_testimonials_active ON testimonials(is_active)",
-                "CREATE INDEX IF NOT EXISTS idx_testimonials_featured ON testimonials(is_featured)",
-                "CREATE INDEX IF NOT EXISTS idx_testimonials_rating ON testimonials(rating)",EATE TABLE IF NOT EXISTS testimonials (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name VARCHAR(255) NOT NULL,
-                    company VARCHAR(255),
-                    position VARCHAR(255),
-                    testimonial TEXT NOT NULL,
-                    rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
-                    image_url VARCHAR(500),
-                    is_featured BOOLEAN DEFAULT 0,
-                    is_active BOOLEAN DEFAULT 1,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )",
-                
-                // Add indexes for testimonials (SQLite)
-                "CREATE INDEX IF NOT EXISTS idx_testimonials_active ON testimonials(is_active)",
-                "CREATE INDEX IF NOT EXISTS idx_testimonials_featured ON testimonials(is_featured)",
-                "CREATE INDEX IF NOT EXISTS idx_testimonials_rating ON testimonials(rating)",ists($path)) {
+    if (!file_exists($path)) {
         return;
     }
     
@@ -343,8 +307,92 @@ class Database {
         echo "Driver: " . $this->getDriverName() . "<br>";
         echo "No sample data inserted - using clean Supabase database.<br>";
     }
+    
+    public function getConnection() {
+        return $this->connection;
+    }
+    
+    public function getDriverName() {
+        return $this->connection->getAttribute(PDO::ATTR_DRIVER_NAME);
+    }
+    
+    public function getConnectionInfo() {
+        $driver = $this->getDriverName();
+        $info = ['driver' => $driver];
+        
+        if ($driver === 'sqlite') {
+            $stmt = $this->connection->query("PRAGMA database_list");
+            $databases = $stmt->fetchAll();
+            foreach ($databases as $db) {
+                if ($db['name'] === 'main') {
+                    $info['file'] = $db['file'];
+                    break;
+                }
+            }
+        } else {
+            // For PostgreSQL, get connection info
+            $info['host'] = 'Connected to PostgreSQL';
+        }
+        
+        return $info;
+    }
+    
+    public function query($sql, $params = []) {
+        try {
+            // Use cached prepared statement if available
+            if (!isset($this->preparedStatements[$sql])) {
+                $this->preparedStatements[$sql] = $this->connection->prepare($sql);
+            }
+            $stmt = $this->preparedStatements[$sql];
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            throw new Exception("Query failed: " . $e->getMessage());
+        }
+    }
+    
+    public function execute($sql, $params = []) {
+        try {
+            // Use cached prepared statement if available
+            if (!isset($this->preparedStatements[$sql])) {
+                $this->preparedStatements[$sql] = $this->connection->prepare($sql);
+            }
+            $stmt = $this->preparedStatements[$sql];
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            throw new Exception("Execute failed: " . $e->getMessage());
+        }
+    }
+    
+    public function fetchAll($sql, $params = []) {
+        return $this->query($sql, $params)->fetchAll();
+    }
+    
+    public function fetchOne($sql, $params = []) {
+        return $this->query($sql, $params)->fetch();
+    }
+    
+    public function lastInsertId() {
+        return $this->connection->lastInsertId();
+    }
+    
+    public function beginTransaction() {
+        return $this->connection->beginTransaction();
+    }
+    
+    public function commit() {
+        return $this->connection->commit();
+    }
+    
+    public function rollback() {
+        return $this->connection->rollback();
+    }
 }
 
-// Initialize database connection (but don't create global variable here)
-// Each file should instantiate its own database connection
-?>
+// Create a global database instance
+try {
+    $db = new Database();
+} catch (Exception $e) {
+    error_log("Database initialization failed: " . $e->getMessage());
+    die("Database connection failed. Please check your configuration.");
+}
