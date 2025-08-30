@@ -908,7 +908,7 @@ if ($isLoggedIn) {
                                                 Debug Information
                                             </h6>
                                             <p class="card-text">View detailed database debug information.</p>
-                                            <a href="/app-debug.php" target="_blank" class="btn btn-warning">
+                                            <a href="app-debug.php" target="_blank" class="btn btn-warning">
                                                 <i class="fas fa-bug me-2"></i>Debug Page
                                             </a>
                                         </div>
@@ -923,7 +923,7 @@ if ($isLoggedIn) {
                                                 Setup Page
                                             </h6>
                                             <p class="card-text">Run the initial setup and configuration.</p>
-                                            <a href="/setup.php" target="_blank" class="btn btn-secondary">
+                                            <a href="setup.php" target="_blank" class="btn btn-secondary">
                                                 <i class="fas fa-play me-2"></i>Setup
                                             </a>
                                         </div>
@@ -1188,7 +1188,45 @@ if ($isLoggedIn) {
         document.addEventListener('DOMContentLoaded', function() {
             initializeEventListeners();
             showNotifications();
+            
+            // Test API connectivity on page load
+            testAPIConnection();
         });
+        
+        // Test API connectivity
+        function testAPIConnection() {
+            console.log('Testing API connection...');
+            fetch('api/admin-crud.php?action=test')
+                .then(response => {
+                    console.log('API test response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`API test failed: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('API test successful:', data);
+                    if (data.success) {
+                        // API is working, load dashboard data
+                        updateDashboardStats();
+                        refreshContacts();
+                        refreshTestimonials();
+                    } else {
+                        showNotification('API test failed: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('API test error:', error);
+                    showNotification('API connection failed: ' + error.message, 'error');
+                    
+                    // Show detailed error in console for debugging
+                    console.error('API Error Details:', {
+                        url: 'api/admin-crud.php?action=test',
+                        error: error.message,
+                        timestamp: new Date().toISOString()
+                    });
+                });
+        }
         
         // Initialize all event listeners
         function initializeEventListeners() {
@@ -1266,9 +1304,9 @@ if ($isLoggedIn) {
         
         // AJAX helper function
         function makeAjaxRequest(data, callback) {
-            console.log('Making API request to:', '/api/admin-crud.php', 'with data:', data);
+            console.log('Making API request to:', 'api/admin-crud.php', 'with data:', data);
             
-            fetch('/api/admin-crud.php', {
+            fetch('api/admin-crud.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -1281,7 +1319,25 @@ if ($isLoggedIn) {
                 console.log('API response headers:', response.headers);
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    // Get error details for better debugging
+                    return response.text().then(text => {
+                        console.error('API Error Response:', text);
+                        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                        
+                        // Try to extract meaningful error from response
+                        if (text) {
+                            try {
+                                const errorData = JSON.parse(text);
+                                if (errorData.message) {
+                                    errorMessage = errorData.message;
+                                }
+                            } catch (e) {
+                                // If not JSON, use first 200 chars of response
+                                errorMessage = text.substring(0, 200);
+                            }
+                        }
+                        throw new Error(errorMessage);
+                    });
                 }
                 
                 return response.text();
@@ -1389,7 +1445,7 @@ if ($isLoggedIn) {
             if (confirm(`Mark all ${newContacts.length} new contacts as read?`)) {
                 showLoading('Marking all contacts as read...');
                 
-                makeAjaxRequest('/api/admin-crud.php?action=mark_all_contacts_read', {
+                makeAjaxRequest('api/admin-crud.php?action=mark_all_contacts_read', {
                     method: 'POST'
                 })
                 .then(data => {
@@ -1520,7 +1576,7 @@ if ($isLoggedIn) {
                 table.classList.add('loading');
                 
                 // Load contacts data via API without page reload
-                fetch('/api/admin-crud.php?action=get_contacts')
+                fetch('api/admin-crud.php?action=get_contacts')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -1582,7 +1638,7 @@ if ($isLoggedIn) {
                 table.classList.add('loading');
                 
                 // Load testimonials data via API without page reload
-                fetch('/api/admin-crud.php?action=get_testimonials')
+                fetch('api/admin-crud.php?action=get_testimonials')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -1642,7 +1698,7 @@ if ($isLoggedIn) {
         
         function updateDashboardStats() {
             // Update dashboard statistics via API without page reload
-            fetch('/api/admin-crud.php?action=get_stats')
+            fetch('api/admin-crud.php?action=get_stats')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1694,16 +1750,37 @@ if ($isLoggedIn) {
         }
         
         // Loading system
+        // Global loading timeout variable
+        let globalLoadingTimeout = null;
+        
         function showLoading(message = 'Processing...') {
             const loadingOverlay = document.getElementById('globalLoading');
             const loadingText = loadingOverlay.querySelector('.mt-3');
             loadingText.textContent = message;
             loadingOverlay.style.display = 'flex';
+            
+            // Clear any existing timeout
+            if (globalLoadingTimeout) {
+                clearTimeout(globalLoadingTimeout);
+            }
+            
+            // Set a 60-second timeout to automatically hide loading
+            globalLoadingTimeout = setTimeout(() => {
+                hideLoading();
+                showNotification('Operation timed out. Please try again.', 'error');
+                console.warn('Global loading timeout triggered after 60 seconds');
+            }, 60000);
         }
         
         function hideLoading() {
             const loadingOverlay = document.getElementById('globalLoading');
             loadingOverlay.style.display = 'none';
+            
+            // Clear the timeout when manually hiding loading
+            if (globalLoadingTimeout) {
+                clearTimeout(globalLoadingTimeout);
+                globalLoadingTimeout = null;
+            }
         }
         
         function setButtonLoading(button, loading = true) {
@@ -1739,7 +1816,7 @@ if ($isLoggedIn) {
         
         // Contact and Testimonial Management Functions
         function viewContact(contactId) {
-            fetch(`/api/admin-crud.php?action=get_contact&id=${contactId}`)
+            fetch(`api/admin-crud.php?action=get_contact&id=${contactId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -1783,7 +1860,7 @@ if ($isLoggedIn) {
         }
         
         function viewTestimonial(testimonialId) {
-            fetch(`/api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+            fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -1824,7 +1901,7 @@ if ($isLoggedIn) {
         }
         
         function editTestimonial(testimonialId) {
-            fetch(`/api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+            fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -1866,7 +1943,7 @@ if ($isLoggedIn) {
                     showNotification('Request timeout. Please try again.', 'error');
                 }, 30000); // 30 second timeout
                 
-                fetch('/api/admin-crud.php', {
+                fetch('api/admin-crud.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
@@ -1923,7 +2000,7 @@ if ($isLoggedIn) {
                 params.append(key, value);
             }
             
-            fetch('/api/admin-crud.php', {
+            fetch('api/admin-crud.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -1983,7 +2060,7 @@ if ($isLoggedIn) {
                 params.append(key, value);
             }
             
-            fetch('/api/admin-crud.php', {
+            fetch('api/admin-crud.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
