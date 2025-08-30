@@ -7,19 +7,20 @@ require_once __DIR__ . '/config/database.php';
 
 echo "<h1>Database Connection Test</h1>";
 
-// Test 1: Check if we can connect to Supabase directly
-echo "<h2>Direct Supabase Connection Test</h2>";
+// Test 1: Check if we can connect to Supabase Session Pooler
+echo "<h2>Supabase Session Pooler Connection Test</h2>";
 try {
-    $dsn = "pgsql:host=db.brdavdukxvilpdzgbsqd.supabase.co;port=5432;dbname=postgres;sslmode=require";
-    $username = 'postgres';
+    // Using Session Pooler (IPv4 compatible)
+    $dsn = "pgsql:host=db.brdavdukxvilpdzgbsqd.supabase.co;port=6543;dbname=postgres;sslmode=require";
+    $username = 'postgres.brdavdukxvilpdzgbsqd'; // Session pooler username format
     $password = '1f73m7bxpj1i6iaQ'; // New password
     
     $pdo = new PDO($dsn, $username, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_TIMEOUT => 10
+        PDO::ATTR_TIMEOUT => 30
     ]);
     
-    echo "<p style='color: green;'>✅ Direct Supabase connection successful!</p>";
+    echo "<p style='color: green;'>✅ Supabase Session Pooler connection successful!</p>";
     
     // Test query
     $stmt = $pdo->query("SELECT version()");
@@ -27,15 +28,43 @@ try {
     echo "<p>Database version: " . htmlspecialchars($version) . "</p>";
     
     // Test creating a simple table
-    $pdo->exec("CREATE TABLE IF NOT EXISTS test_table (id SERIAL PRIMARY KEY, message TEXT)");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS connection_test (id SERIAL PRIMARY KEY, test_message TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
     echo "<p style='color: green;'>✅ Table creation test successful!</p>";
     
+    // Insert test data
+    $stmt = $pdo->prepare("INSERT INTO connection_test (test_message) VALUES (?)");
+    $stmt->execute(['Session Pooler Test - ' . date('Y-m-d H:i:s')]);
+    echo "<p style='color: green;'>✅ Data insertion test successful!</p>";
+    
+    // Count records
+    $stmt = $pdo->query("SELECT COUNT(*) FROM connection_test");
+    $count = $stmt->fetchColumn();
+    echo "<p>Test records in database: " . $count . "</p>";
+    
     // Clean up test table
-    $pdo->exec("DROP TABLE IF EXISTS test_table");
+    $pdo->exec("DROP TABLE IF EXISTS connection_test");
     echo "<p style='color: green;'>✅ Table cleanup successful!</p>";
     
 } catch (Exception $e) {
-    echo "<p style='color: red;'>❌ Direct Supabase connection failed: " . htmlspecialchars($e->getMessage()) . "</p>";
+    echo "<p style='color: red;'>❌ Supabase Session Pooler connection failed: " . htmlspecialchars($e->getMessage()) . "</p>";
+    
+    // Test direct connection for comparison
+    echo "<h3>Direct Connection Test (for comparison)</h3>";
+    try {
+        $dsn = "pgsql:host=db.brdavdukxvilpdzgbsqd.supabase.co;port=5432;dbname=postgres;sslmode=require";
+        $username = 'postgres';
+        $password = '1f73m7bxpj1i6iaQ';
+        
+        $pdo = new PDO($dsn, $username, $password, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 10
+        ]);
+        
+        echo "<p style='color: green;'>✅ Direct connection worked (IPv6)</p>";
+        
+    } catch (Exception $e2) {
+        echo "<p style='color: red;'>❌ Direct connection also failed: " . htmlspecialchars($e2->getMessage()) . "</p>";
+    }
 }
 
 // Test 2: Check current application database connection

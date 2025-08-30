@@ -55,7 +55,31 @@ class Database {
                 $username = $dbParts['user'];
                 $password = $dbParts['pass'];
             } else {
-                // Try SQLite as fallback for Railway
+                // Fallback to Supabase Session Pooler (IPv4 compatible)
+                $host = $_ENV['SUPABASE_HOST'] ?? getenv('SUPABASE_HOST') ?? 'db.brdavdukxvilpdzgbsqd.supabase.co';
+                $port = $_ENV['SUPABASE_PORT'] ?? getenv('SUPABASE_PORT') ?? '6543'; // Session pooler port
+                $database = $_ENV['SUPABASE_DATABASE'] ?? getenv('SUPABASE_DATABASE') ?? 'postgres';
+                $username = $_ENV['SUPABASE_USERNAME'] ?? getenv('SUPABASE_USERNAME') ?? 'postgres.brdavdukxvilpdzgbsqd'; // Session pooler username
+                $password = $_ENV['SUPABASE_PASSWORD'] ?? getenv('SUPABASE_PASSWORD') ?? '1f73m7bxpj1i6iaQ';
+                
+                $dsn = "pgsql:host={$host};port={$port};dbname={$database};sslmode=require";
+                
+                // Log that we're using Supabase Session Pooler
+                error_log("Using Supabase Session Pooler at: {$host}:{$port}");
+            }
+            
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_TIMEOUT => 30, // 30 second timeout
+            ];
+            
+            $this->connection = new PDO($dsn, $username, $password, $options);
+            
+        } catch (PDOException $e) {
+            // If Supabase fails, fall back to SQLite
+            try {
                 $sqliteFile = __DIR__ . '/../data/database.sqlite';
                 $dataDir = dirname($sqliteFile);
                 
@@ -65,31 +89,21 @@ class Database {
                 }
                 
                 $dsn = "sqlite:" . $sqliteFile;
-                $username = null;
-                $password = null;
+                $this->connection = new PDO($dsn, null, null, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]);
                 
-                // Log that we're using SQLite fallback
-                error_log("Using SQLite fallback database at: " . $sqliteFile);
-            }
-            
-            $options = [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ];
-            
-            $this->connection = new PDO($dsn, $username, $password, $options);
-            
-            // For SQLite, enable foreign keys and set timeout
-            if (strpos($dsn, 'sqlite:') === 0) {
+                // For SQLite, enable foreign keys and set timeout
                 $this->connection->exec('PRAGMA foreign_keys = ON');
                 $this->connection->exec('PRAGMA busy_timeout = 30000');
+                
+                error_log("Fell back to SQLite database at: " . $sqliteFile);
+                
+            } catch (PDOException $sqliteError) {
+                error_log("Both Supabase and SQLite failed: Supabase=" . $e->getMessage() . ", SQLite=" . $sqliteError->getMessage());
+                throw new Exception("Database connection failed: " . $e->getMessage());
             }
-            
-        } catch (PDOException $e) {
-            // More detailed error logging for Railway
-            error_log("Database connection failed: " . $e->getMessage());
-            throw new Exception("Database connection failed: " . $e->getMessage());
         }
     }
     
