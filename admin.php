@@ -1299,10 +1299,20 @@ if ($isLoggedIn) {
             }
             
             if (confirm(`Mark all ${newContacts.length} new contacts as read?`)) {
-                newContacts.forEach(badge => {
-                    const row = badge.closest('tr');
-                    const contactId = row.dataset.id;
-                    markAsRead(contactId);
+                makeAjaxRequest('/api/admin-crud.php?action=mark_all_contacts_read', {
+                    method: 'POST'
+                })
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadContacts(); // Refresh the contacts list
+                    } else {
+                        showNotification(data.message || 'Failed to mark all contacts as read', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error marking all as read:', error);
+                    showNotification('Error marking all contacts as read', 'error');
                 });
             }
         }
@@ -1425,11 +1435,11 @@ if ($isLoggedIn) {
                             tbody.innerHTML = '';
                             
                             data.data.forEach(contact => {
-                                const statusBadge = contact.is_read ? 
+                                const statusBadge = contact.status === 'read' ? 
                                     '<span class="badge bg-info">Read</span>' : 
                                     '<span class="badge bg-warning">New</span>';
                                 
-                                const markReadBtn = !contact.is_read ? 
+                                const markReadBtn = contact.status !== 'read' ? 
                                     `<button class="btn btn-success btn-sm me-1" onclick="markAsRead(${contact.id})" title="Mark as Read">
                                         <i class="fas fa-check"></i>
                                     </button>` : '';
@@ -1608,7 +1618,7 @@ if ($isLoggedIn) {
                                 <div class="col-md-6">
                                     <p><strong>Subject:</strong> ${contact.subject}</p>
                                     <p><strong>Date:</strong> ${new Date(contact.created_at).toLocaleDateString()}</p>
-                                    <p><strong>Status:</strong> ${contact.is_read ? 'Read' : 'New'}</p>
+                                    <p><strong>Status:</strong> ${contact.status === 'read' ? 'Read' : 'New'}</p>
                                 </div>
                             </div>
                             <div class="mt-3">
@@ -1622,7 +1632,7 @@ if ($isLoggedIn) {
                         modal.show();
                         
                         // Mark as read if not already
-                        if (!contact.is_read) {
+                        if (contact.status !== 'read') {
                             markAsRead(contactId);
                         }
                     } else {

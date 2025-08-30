@@ -6,7 +6,43 @@
 
 // Load environment variables from .env file if it exists
 function loadEnv($path) {
-    if (!file_exists($path)) {
+                  // Testimonials table (SQLite)
+                     // Testimonials table (PostgreSQL)
+                "CREATE TABLE IF NOT EXISTS testimonials (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    company VARCHAR(255),
+                    position VARCHAR(255),
+                    testimonial TEXT NOT NULL,
+                    rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+                    image_url VARCHAR(500),
+                    is_featured BOOLEAN DEFAULT false,
+                    is_active BOOLEAN DEFAULT true,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )",
+                
+                // Add indexes for testimonials (PostgreSQL)
+                "CREATE INDEX IF NOT EXISTS idx_testimonials_active ON testimonials(is_active)",
+                "CREATE INDEX IF NOT EXISTS idx_testimonials_featured ON testimonials(is_featured)",
+                "CREATE INDEX IF NOT EXISTS idx_testimonials_rating ON testimonials(rating)",EATE TABLE IF NOT EXISTS testimonials (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name VARCHAR(255) NOT NULL,
+                    company VARCHAR(255),
+                    position VARCHAR(255),
+                    testimonial TEXT NOT NULL,
+                    rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+                    image_url VARCHAR(500),
+                    is_featured BOOLEAN DEFAULT 0,
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )",
+                
+                // Add indexes for testimonials (SQLite)
+                "CREATE INDEX IF NOT EXISTS idx_testimonials_active ON testimonials(is_active)",
+                "CREATE INDEX IF NOT EXISTS idx_testimonials_featured ON testimonials(is_featured)",
+                "CREATE INDEX IF NOT EXISTS idx_testimonials_rating ON testimonials(rating)",ists($path)) {
         return;
     }
     
@@ -36,6 +72,7 @@ loadEnv(__DIR__ . '/../.env');
 
 class Database {
     private $connection;
+    private $preparedStatements = []; // Cache for prepared statements
     
     public function __construct() {
         $this->connect();
@@ -67,6 +104,9 @@ class Database {
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
                     PDO::ATTR_TIMEOUT => 30,
+                    PDO::ATTR_PERSISTENT => true, // Enable persistent connections for better performance
+                    PDO::ATTR_STRINGIFY_FETCHES => false, // Maintain proper data types
+                    PDO::ATTR_CASE => PDO::CASE_NATURAL, // Preserve case sensitivity
                 ]);
                 
                 $connected = true;
@@ -92,6 +132,11 @@ class Database {
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_TIMEOUT => 30,
+                    PDO::ATTR_PERSISTENT => true, // Enable persistent connections for better performance
+                    PDO::ATTR_STRINGIFY_FETCHES => false, // Maintain proper data types
+                    PDO::ATTR_CASE => PDO::CASE_NATURAL, // Preserve case sensitivity
+                ]);
                     PDO::ATTR_TIMEOUT => 30,
                 ]);
                 
@@ -166,7 +211,11 @@ class Database {
     
     public function query($sql, $params = []) {
         try {
-            $stmt = $this->connection->prepare($sql);
+            // Use cached prepared statement if available
+            if (!isset($this->preparedStatements[$sql])) {
+                $this->preparedStatements[$sql] = $this->connection->prepare($sql);
+            }
+            $stmt = $this->preparedStatements[$sql];
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
@@ -176,7 +225,11 @@ class Database {
     
     public function execute($sql, $params = []) {
         try {
-            $stmt = $this->connection->prepare($sql);
+            // Use cached prepared statement if available
+            if (!isset($this->preparedStatements[$sql])) {
+                $this->preparedStatements[$sql] = $this->connection->prepare($sql);
+            }
+            $stmt = $this->preparedStatements[$sql];
             return $stmt->execute($params);
         } catch (PDOException $e) {
             throw new Exception("Execute failed: " . $e->getMessage());
@@ -220,6 +273,11 @@ class Database {
                     status VARCHAR(20) DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied'))
                 )",
                 
+                // Add indexes for better performance (SQLite)
+                "CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status)",
+                "CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at)",
+                "CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email)",
+                
                 // Testimonials table (SQLite)
                 "CREATE TABLE IF NOT EXISTS testimonials (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -249,6 +307,11 @@ class Database {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     status VARCHAR(20) DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied'))
                 )",
+                
+                // Add indexes for better performance (PostgreSQL)
+                "CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status)",
+                "CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at)",
+                "CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email)",
                 
                 // Testimonials table (PostgreSQL)
                 "CREATE TABLE IF NOT EXISTS testimonials (

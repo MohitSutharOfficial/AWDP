@@ -139,7 +139,7 @@ try {
         case 'mark_contact_read':
             $contactId = intval($_POST['contact_id'] ?? $_POST['id'] ?? 0);
             if ($contactId > 0) {
-                $db->execute("UPDATE contacts SET is_read = true WHERE id = ?", [$contactId]);
+                $db->execute("UPDATE contacts SET status = 'read' WHERE id = ?", [$contactId]);
                 $response = ['success' => true, 'message' => 'Contact marked as read'];
             } else {
                 $response['message'] = 'Invalid contact ID';
@@ -147,7 +147,7 @@ try {
             break;
             
         case 'mark_all_contacts_read':
-            $db->execute("UPDATE contacts SET is_read = true WHERE is_read = false");
+            $db->execute("UPDATE contacts SET status = 'read' WHERE status = 'new'");
             $response = ['success' => true, 'message' => 'All contacts marked as read'];
             break;
             
