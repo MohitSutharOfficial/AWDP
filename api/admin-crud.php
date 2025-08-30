@@ -5,17 +5,18 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/navigation.php';
 
 // Start session
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Check authentication
+// Check authentication - temporarily disabled for debugging
 $isLoggedIn = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
 
-if (!$isLoggedIn) {
+// For debugging - allow API calls even if not logged in for test endpoint
+if (!$isLoggedIn && ($_GET['action'] ?? $_POST['action'] ?? '') !== 'test') {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit;
@@ -26,8 +27,9 @@ try {
     $db = new Database();
     $stats = new AdminStats($db);
 } catch (Exception $e) {
+    error_log("Database connection error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database connection error']);
+    echo json_encode(['success' => false, 'message' => 'Database connection error: ' . $e->getMessage()]);
     exit;
 }
 
@@ -37,6 +39,10 @@ $response = ['success' => false, 'message' => ''];
 
 try {
     switch ($action) {
+        case 'test':
+            $response = ['success' => true, 'message' => 'API is working', 'action' => $action];
+            break;
+            
         case 'get_stats':
             $allStats = $stats->getAllStats();
             $response = ['success' => true, 'data' => $allStats];

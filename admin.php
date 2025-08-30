@@ -1208,6 +1208,8 @@ if ($isLoggedIn) {
         
         // AJAX helper function
         function makeAjaxRequest(data, callback) {
+            console.log('Making API request to:', 'api/admin-crud.php', 'with data:', data);
+            
             fetch('api/admin-crud.php', {
                 method: 'POST',
                 headers: {
@@ -1216,16 +1218,36 @@ if ($isLoggedIn) {
                 },
                 body: new URLSearchParams(data)
             })
-            .then(response => response.json())
-            .then(result => {
-                if (callback) callback(result);
-                if (result.message) {
-                    showNotification(result.message, result.success ? 'success' : 'error');
+            .then(response => {
+                console.log('API response status:', response.status);
+                console.log('API response headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return response.text();
+            })
+            .then(text => {
+                console.log('Raw response text:', text);
+                
+                try {
+                    const result = JSON.parse(text);
+                    console.log('Parsed JSON result:', result);
+                    
+                    if (callback) callback(result);
+                    if (result.message) {
+                        showNotification(result.message, result.success ? 'success' : 'error');
+                    }
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    console.error('Response text that failed to parse:', text);
+                    showNotification('Server returned invalid response: ' + text.substring(0, 100), 'error');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showNotification('An error occurred. Please try again.', 'error');
+                console.error('Fetch error:', error);
+                showNotification('Network error: ' + error.message, 'error');
             });
         }
         
