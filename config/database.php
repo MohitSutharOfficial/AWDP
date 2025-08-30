@@ -12,18 +12,21 @@ function loadEnv($path) {
     
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) {
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0) {
             continue;
         }
         
-        list($name, $value) = explode('=', $line, 2);
-        $name = trim($name);
-        $value = trim($value);
-        
-        if (!array_key_exists($name, $_ENV) && !getenv($name)) {
-            putenv(sprintf('%s=%s', $name, $value));
-            $_ENV[$name] = $value;
-            $_SERVER[$name] = $value;
+        if (strpos($line, '=') !== false) {
+            list($name, $value) = explode('=', $line, 2);
+            $name = trim($name);
+            $value = trim($value, '"\''); // Remove quotes
+            
+            if (!empty($name) && (!array_key_exists($name, $_ENV) && !getenv($name))) {
+                putenv(sprintf('%s=%s', $name, $value));
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+            }
         }
     }
 }
@@ -39,12 +42,12 @@ class Database {
     }
     
     private function connect() {
-        try {
-            // Railway provides DATABASE_URL environment variable
-            $databaseUrl = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL');
-            
-            if ($databaseUrl) {
-                // Parse Railway DATABASE_URL
+        $connected = false;
+        
+        // Try Railway DATABASE_URL first
+        $databaseUrl = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL');
+        if ($databaseUrl && !$connected) {
+            try {
                 $dbParts = parse_url($databaseUrl);
                 $dsn = sprintf(
                     "pgsql:host=%s;port=%d;dbname=%s;sslmode=require",
@@ -52,63 +55,107 @@ class Database {
                     $dbParts['port'],
                     ltrim($dbParts['path'], '/')
                 );
-                $username = $dbParts['user'];
-                $password = $dbParts['pass'];
-            } else {
-                // Fallback to Supabase Transaction Pooler (IPv4 compatible)
+                
+                $this->connection = new PDO($dsn, $dbParts['user'], $dbParts['pass'], [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_TIMEOUT => 30,
+                ]);
+                
+                $connected = true;
+                error_log("Connected using Railway DATABASE_URL");
+                
+            } catch (PDOException $e) {
+                error_log("Railway DATABASE_URL failed: " . $e->getMessage());
+            }
+        }
+        
+        // Try Supabase Transaction Pooler if Railway failed
+        if (!$connected) {
+            try {
                 $host = $_ENV['SUPABASE_HOST'] ?? getenv('SUPABASE_HOST') ?? 'aws-1-ap-south-1.pooler.supabase.com';
-                $port = $_ENV['SUPABASE_PORT'] ?? getenv('SUPABASE_PORT') ?? '6543'; // Transaction pooler port
+                $port = $_ENV['SUPABASE_PORT'] ?? getenv('SUPABASE_PORT') ?? '6543';
                 $database = $_ENV['SUPABASE_DATABASE'] ?? getenv('SUPABASE_DATABASE') ?? 'postgres';
-                $username = $_ENV['SUPABASE_USERNAME'] ?? getenv('SUPABASE_USERNAME') ?? 'postgres.brdavdukxvilpdzgbsqd'; // Transaction pooler username
+                $username = $_ENV['SUPABASE_USERNAME'] ?? getenv('SUPABASE_USERNAME') ?? 'postgres.brdavdukxvilpdzgbsqd';
                 $password = $_ENV['SUPABASE_PASSWORD'] ?? getenv('SUPABASE_PASSWORD') ?? '1f73m7bxpj1i6iaQ';
                 
                 $dsn = "pgsql:host={$host};port={$port};dbname={$database};sslmode=require";
                 
-                // Log that we're using Supabase Transaction Pooler
-                error_log("Using Supabase Transaction Pooler at: {$host}:{$port}");
+                $this->connection = new PDO($dsn, $username, $password, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_TIMEOUT => 30,
+                ]);
+                
+                $connected = true;
+                error_log("Connected using Supabase Transaction Pooler at: {$host}:{$port}");
+                
+            } catch (PDOException $e) {
+                error_log("Supabase Transaction Pooler failed: " . $e->getMessage());
             }
-            
-            $options = [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::ATTR_TIMEOUT => 30, // 30 second timeout
-            ];
-            
-            $this->connection = new PDO($dsn, $username, $password, $options);
-            
-        } catch (PDOException $e) {
-            // If Supabase fails, fall back to SQLite
+        }
+        
+        // Fall back to SQLite only if both PostgreSQL options failed
+        if (!$connected) {
             try {
                 $sqliteFile = __DIR__ . '/../data/database.sqlite';
                 $dataDir = dirname($sqliteFile);
                 
-                // Create data directory if it doesn't exist
                 if (!file_exists($dataDir)) {
                     mkdir($dataDir, 0755, true);
                 }
                 
-                $dsn = "sqlite:" . $sqliteFile;
-                $this->connection = new PDO($dsn, null, null, [
+                $this->connection = new PDO("sqlite:" . $sqliteFile, null, null, [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 ]);
                 
-                // For SQLite, enable foreign keys and set timeout
                 $this->connection->exec('PRAGMA foreign_keys = ON');
                 $this->connection->exec('PRAGMA busy_timeout = 30000');
                 
+                $connected = true;
                 error_log("Fell back to SQLite database at: " . $sqliteFile);
                 
-            } catch (PDOException $sqliteError) {
-                error_log("Both Supabase and SQLite failed: Supabase=" . $e->getMessage() . ", SQLite=" . $sqliteError->getMessage());
-                throw new Exception("Database connection failed: " . $e->getMessage());
+            } catch (PDOException $e) {
+                error_log("SQLite fallback also failed: " . $e->getMessage());
+                throw new Exception("All database connection methods failed");
             }
+        }
+        
+        if (!$connected) {
+            throw new Exception("Unable to establish database connection");
         }
     }
     
     public function getConnection() {
         return $this->connection;
+    }
+    
+    public function getDriverName() {
+        return $this->connection->getAttribute(PDO::ATTR_DRIVER_NAME);
+    }
+    
+    public function getConnectionInfo() {
+        $driver = $this->getDriverName();
+        $info = ['driver' => $driver];
+        
+        if ($driver === 'sqlite') {
+            $stmt = $this->connection->query("PRAGMA database_list");
+            $databases = $stmt->fetchAll();
+            foreach ($databases as $db) {
+                if ($db['name'] === 'main') {
+                    $info['file'] = $db['file'];
+                    break;
+                }
+            }
+        } else {
+            // For PostgreSQL, get connection info
+            $info['host'] = 'Connected to PostgreSQL';
+        }
+        
+        return $info;
     }
     
     public function query($sql, $params = []) {
