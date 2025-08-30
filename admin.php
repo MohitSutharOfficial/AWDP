@@ -1748,6 +1748,13 @@ if ($isLoggedIn) {
         
         const CACHE_DURATION = 30000; // 30 seconds
         
+        // Clear cache on page load to ensure fresh data with correct column structure
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('Clearing cache on page load to ensure correct column alignment');
+            dataCache.testimonials = null;
+            dataCache.contacts = null;
+        });
+        
         function isCacheValid(type) {
             return dataCache[type] && 
                    dataCache.lastUpdated[type] && 
@@ -1831,9 +1838,18 @@ if ($isLoggedIn) {
                     '<span class="badge bg-secondary">Inactive</span>';
                 
                 const featuredBadge = testimonial.is_featured ? 
-                    '<span class="badge bg-warning ms-1">Featured</span>' : '';
+                    '<span class="badge bg-warning">Featured</span>' : 
+                    '<span class="badge bg-secondary">Regular</span>';
                 
                 const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
+                
+                // Format date
+                const dateFormatted = testimonial.created_at ? 
+                    new Date(testimonial.created_at).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    }) : 'N/A';
                 
                 tableRows += `
                     <tr data-id="${testimonial.id}">
@@ -1841,8 +1857,15 @@ if ($isLoggedIn) {
                         <td>${testimonial.name}</td>
                         <td>${testimonial.company || 'N/A'}</td>
                         <td>${testimonial.position || 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showTestimonial(${testimonial.id}, '${(testimonial.testimonial || '').replace(/'/g, "\\'")}')">
+                                <i class="fas fa-eye me-1"></i>View
+                            </button>
+                        </td>
                         <td class="text-warning">${stars}</td>
-                        <td>${statusBadge}${featuredBadge}</td>
+                        <td>${featuredBadge}</td>
+                        <td>${statusBadge}</td>
+                        <td>${dateFormatted}</td>
                         <td>
                             <div class="btn-group btn-group-sm">
                                 <button class="btn btn-primary btn-sm me-1" onclick="viewTestimonial(${testimonial.id})" title="View Details">
