@@ -101,8 +101,6 @@ class Database {
                     PDO::ATTR_STRINGIFY_FETCHES => false, // Maintain proper data types
                     PDO::ATTR_CASE => PDO::CASE_NATURAL, // Preserve case sensitivity
                 ]);
-                    PDO::ATTR_TIMEOUT => 30,
-                ]);
                 
                 $connected = true;
                 error_log("Connected using Supabase Transaction Pooler at: {$host}:{$port}");
