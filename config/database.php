@@ -260,51 +260,10 @@ class Database {
             }
         }
         
-        // Insert sample testimonials
-        $this->insertSampleData();
-    }
-    
-    private function insertSampleData() {
-        $testimonials = [
-            [
-                'name' => 'Sarah Johnson',
-                'company' => 'Digital Marketing Pro',
-                'position' => 'CEO',
-                'testimonial' => 'TechCorp Solutions transformed our business with their innovative web platform. The team\'s expertise and dedication exceeded our expectations.',
-                'rating' => 5,
-                'is_featured' => 1
-            ],
-            [
-                'name' => 'Michael Chen',
-                'company' => 'StartupVenture Inc.',
-                'position' => 'CTO',
-                'testimonial' => 'Outstanding mobile app development. They delivered a high-quality solution on time and within budget.',
-                'rating' => 5,
-                'is_featured' => 1
-            ],
-            [
-                'name' => 'Emily Rodriguez',
-                'company' => 'HealthTech Solutions',
-                'position' => 'Product Manager',
-                'testimonial' => 'The cloud migration services were seamless. Our infrastructure is now more scalable and secure than ever.',
-                'rating' => 5,
-                'is_featured' => 0
-            ]
-        ];
-        
-        foreach ($testimonials as $testimonial) {
-            try {
-                // Check if testimonial already exists
-                $existing = $this->fetchOne("SELECT id FROM testimonials WHERE name = ? AND company = ?", 
-                                           [$testimonial['name'], $testimonial['company']]);
-                if (!$existing) {
-                    $this->insert('testimonials', $testimonial);
-                }
-            } catch (Exception $e) {
-                // Testimonial might already exist or table might not be ready, skip
-                error_log("Failed to insert sample testimonial: " . $e->getMessage());
-            }
-        }
+        echo "Database tables created successfully!<br>";
+        echo "Connection info: " . json_encode($this->getConnectionInfo()) . "<br>";
+        echo "Driver: " . $this->getDriverName() . "<br>";
+        echo "No sample data inserted - using clean Supabase database.<br>";
     }
 }
 

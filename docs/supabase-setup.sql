@@ -99,14 +99,11 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
     unsubscribed_at TIMESTAMP NULL
 );
 
--- Insert sample testimonials
-INSERT INTO testimonials (name, company, position, testimonial, rating, is_featured) VALUES
-('Sarah Johnson', 'Digital Marketing Pro', 'CEO', 'TechCorp Solutions transformed our business with their innovative web platform. The team''s expertise and dedication exceeded our expectations.', 5, true),
-('Michael Chen', 'StartupVenture Inc.', 'CTO', 'Outstanding mobile app development. They delivered a high-quality solution on time and within budget.', 5, true),
-('Emily Rodriguez', 'HealthTech Solutions', 'Product Manager', 'The cloud migration services were seamless. Our infrastructure is now more scalable and secure than ever.', 5, false)
-ON CONFLICT DO NOTHING;
+-- Tables created successfully! 
+-- No sample data inserted - using clean database for production use.
+-- Add your own testimonials through the admin panel.
 
--- Insert sample services
+-- Insert sample services (keeping these as they're more like configuration data)
 INSERT INTO services (title, description, icon, features, price_range) VALUES
 ('Web Development', 'Custom web applications built with modern frameworks and responsive design principles.', 'fas fa-code', '["Responsive Design", "Modern Frameworks", "Database Integration"]', '$2,000 - $10,000'),
 ('Mobile Development', 'Native and cross-platform mobile applications for iOS and Android devices.', 'fas fa-mobile-alt', '["iOS & Android", "Cross-platform", "User-friendly UI/UX"]', '$5,000 - $25,000'),

@@ -1,6 +1,22 @@
 <?php
 require_once __DIR__ . '/config/database.php';
 
+// Helper functions
+function formatDate($dateString, $format = 'M j, Y') {
+    if (empty($dateString)) return '-';
+    try {
+        $date = new DateTime($dateString);
+        return $date->format($format);
+    } catch (Exception $e) {
+        return $dateString;
+    }
+}
+
+function truncateText($text, $length = 100) {
+    if (strlen($text) <= $length) return $text;
+    return substr($text, 0, $length) . '...';
+}
+
 // Initialize database connection
 try {
     $db = new Database();
@@ -21,6 +37,95 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 $isLoggedIn = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+    header('Content-Type: application/json');
+    
+    $action = $_POST['action'] ?? '';
+    $response = ['success' => false, 'message' => ''];
+    
+    if (!$isLoggedIn) {
+        $response['message'] = 'Unauthorized access';
+        echo json_encode($response);
+        exit;
+    }
+    
+    try {
+        switch ($action) {
+            case 'mark_contact_read':
+                $contactId = intval($_POST['contact_id'] ?? 0);
+                if ($contactId > 0) {
+                    $db->execute("UPDATE contacts SET status = 'read' WHERE id = ?", [$contactId]);
+                    $response['success'] = true;
+                    $response['message'] = 'Contact marked as read';
+                }
+                break;
+                
+            case 'delete_contact':
+                $contactId = intval($_POST['contact_id'] ?? 0);
+                if ($contactId > 0) {
+                    $db->execute("DELETE FROM contacts WHERE id = ?", [$contactId]);
+                    $response['success'] = true;
+                    $response['message'] = 'Contact deleted successfully';
+                }
+                break;
+                
+            case 'toggle_testimonial_status':
+                $testimonialId = intval($_POST['testimonial_id'] ?? 0);
+                if ($testimonialId > 0) {
+                    $current = $db->fetchOne("SELECT is_active FROM testimonials WHERE id = ?", [$testimonialId]);
+                    $newStatus = $current['is_active'] ? 0 : 1;
+                    $db->execute("UPDATE testimonials SET is_active = ? WHERE id = ?", [$newStatus, $testimonialId]);
+                    $response['success'] = true;
+                    $response['message'] = 'Testimonial status updated';
+                }
+                break;
+                
+            case 'toggle_testimonial_featured':
+                $testimonialId = intval($_POST['testimonial_id'] ?? 0);
+                if ($testimonialId > 0) {
+                    $current = $db->fetchOne("SELECT is_featured FROM testimonials WHERE id = ?", [$testimonialId]);
+                    $newStatus = $current['is_featured'] ? 0 : 1;
+                    $db->execute("UPDATE testimonials SET is_featured = ? WHERE id = ?", [$newStatus, $testimonialId]);
+                    $response['success'] = true;
+                    $response['message'] = 'Featured status updated';
+                }
+                break;
+                
+            case 'add_testimonial':
+                $data = [
+                    'name' => trim($_POST['name'] ?? ''),
+                    'company' => trim($_POST['company'] ?? ''),
+                    'position' => trim($_POST['position'] ?? ''),
+                    'testimonial' => trim($_POST['testimonial'] ?? ''),
+                    'rating' => intval($_POST['rating'] ?? 5),
+                    'is_featured' => isset($_POST['is_featured']) ? 1 : 0,
+                    'is_active' => 1
+                ];
+                
+                if (!empty($data['name']) && !empty($data['testimonial'])) {
+                    $db->execute(
+                        "INSERT INTO testimonials (name, company, position, testimonial, rating, is_featured, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+                        [$data['name'], $data['company'], $data['position'], $data['testimonial'], $data['rating'], $data['is_featured'], $data['is_active']]
+                    );
+                    $response['success'] = true;
+                    $response['message'] = 'Testimonial added successfully';
+                } else {
+                    $response['message'] = 'Name and testimonial are required';
+                }
+                break;
+                
+            default:
+                $response['message'] = 'Unknown action';
+        }
+    } catch (Exception $e) {
+        $response['message'] = 'Error: ' . $e->getMessage();
+    }
+    
+    echo json_encode($response);
+    exit;
+}
 
 // Handle login
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
@@ -113,16 +218,50 @@ if ($isLoggedIn) {
         .admin-nav-link {
             color: rgba(255, 255, 255, 0.8);
             padding: 0.75rem 1.5rem;
-            display: block;
+            display: flex;
+            align-items: center;
             text-decoration: none;
             transition: all 0.3s ease;
             border-left: 3px solid transparent;
+            position: relative;
         }
         
         .admin-nav-link:hover, .admin-nav-link.active {
             color: white;
             background: rgba(255, 255, 255, 0.1);
             border-left-color: white;
+        }
+        
+        .admin-nav-link kbd {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+        
+        .mobile-toggle {
+            border-radius: 50% !important;
+            width: 50px;
+            height: 50px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+        
+        .mobile-overlay.show {
+            display: block;
         }
         
         .stat-widget {
@@ -174,6 +313,7 @@ if ($isLoggedIn) {
             .admin-sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                width: 280px;
             }
             
             .admin-sidebar.show {
@@ -182,7 +322,93 @@ if ($isLoggedIn) {
             
             .admin-content {
                 margin-left: 0;
+                padding: 1rem;
             }
+            
+            .feature-card {
+                margin-bottom: 1rem;
+            }
+            
+            .data-table {
+                margin: 0 -0.5rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .btn-group-sm .btn {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+        }
+        
+        /* Enhanced animations */
+        .tab-content {
+            transition: opacity 0.3s ease;
+        }
+        
+        .stat-widget {
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Better button styles */
+        .btn-group-sm .btn {
+            border-radius: 0.375rem;
+            margin: 0 1px;
+        }
+        
+        /* Modal improvements */
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .modal-header .btn-close {
+            filter: invert(1);
+        }
+        
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -233,33 +459,47 @@ if ($isLoggedIn) {
         </div>
     <?php else: ?>
         <!-- Admin Dashboard -->
-        <div class="admin-sidebar">
+        <div class="admin-sidebar" id="adminSidebar">
             <div class="text-center text-white mb-4">
                 <i class="fas fa-code fa-2x mb-2"></i>
                 <h4>TechCorp Admin</h4>
+                <small class="text-white-50">v2.0 Enhanced</small>
             </div>
             
             <nav>
                 <a href="#dashboard" class="admin-nav-link active" data-tab="dashboard">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    <kbd class="ms-auto">Ctrl+1</kbd>
                 </a>
                 <a href="#contacts" class="admin-nav-link" data-tab="contacts">
                     <i class="fas fa-envelope me-2"></i>Contacts
                     <?php if ($newContactCount > 0): ?>
                         <span class="badge bg-warning ms-2"><?php echo $newContactCount; ?></span>
                     <?php endif; ?>
+                    <kbd class="ms-auto">Ctrl+2</kbd>
                 </a>
                 <a href="#testimonials" class="admin-nav-link" data-tab="testimonials">
                     <i class="fas fa-star me-2"></i>Testimonials
+                    <kbd class="ms-auto">Ctrl+3</kbd>
                 </a>
                 <a href="#database" class="admin-nav-link" data-tab="database">
                     <i class="fas fa-database me-2"></i>Database
+                    <kbd class="ms-auto">Ctrl+4</kbd>
                 </a>
-                <a href="?action=logout" class="admin-nav-link">
+                <hr class="my-3 opacity-50">
+                <a href="?action=logout" class="admin-nav-link text-white-50">
                     <i class="fas fa-sign-out-alt me-2"></i>Logout
                 </a>
             </nav>
         </div>
+        
+        <!-- Mobile Toggle Button -->
+        <button class="mobile-toggle d-lg-none btn btn-primary position-fixed" id="mobileToggle" style="top: 15px; left: 15px; z-index: 9999;">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay d-lg-none" id="mobileOverlay"></div>
         
         <div class="admin-content">
             <!-- Dashboard Tab -->
@@ -370,14 +610,19 @@ if ($isLoggedIn) {
             <div id="contacts" class="tab-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Contact Submissions</h2>
-                    <button class="btn btn-primary" onclick="refreshContacts()">
-                        <i class="fas fa-sync-alt me-2"></i>Refresh
-                    </button>
+                    <div>
+                        <button class="btn btn-success me-2" onclick="markAllRead()">
+                            <i class="fas fa-check-double me-2"></i>Mark All Read
+                        </button>
+                        <button class="btn btn-primary" onclick="refreshContacts()">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="data-table">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0" id="contactsTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
@@ -389,22 +634,35 @@ if ($isLoggedIn) {
                                     <th>Message</th>
                                     <th>Date</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!empty($contacts)): ?>
                                     <?php foreach ($contacts as $contact): ?>
-                                        <tr>
+                                        <tr data-id="<?php echo $contact['id']; ?>">
                                             <td><?php echo $contact['id']; ?></td>
                                             <td><?php echo htmlspecialchars($contact['name']); ?></td>
-                                            <td><?php echo htmlspecialchars($contact['email']); ?></td>
-                                            <td><?php echo htmlspecialchars($contact['phone'] ?: '-'); ?></td>
+                                            <td>
+                                                <a href="mailto:<?php echo htmlspecialchars($contact['email']); ?>" class="text-decoration-none">
+                                                    <?php echo htmlspecialchars($contact['email']); ?>
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <?php if (!empty($contact['phone'])): ?>
+                                                    <a href="tel:<?php echo htmlspecialchars($contact['phone']); ?>" class="text-decoration-none">
+                                                        <?php echo htmlspecialchars($contact['phone']); ?>
+                                                    </a>
+                                                <?php else: ?>
+                                                    -
+                                                <?php endif; ?>
+                                            </td>
                                             <td><?php echo htmlspecialchars($contact['company'] ?: '-'); ?></td>
                                             <td><?php echo htmlspecialchars($contact['subject'] ?: '-'); ?></td>
                                             <td>
-                                                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<?php echo htmlspecialchars($contact['message']); ?>">
-                                                    <?php echo htmlspecialchars(truncateText($contact['message'], 50)); ?>
-                                                </span>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="showMessage(<?php echo $contact['id']; ?>, '<?php echo htmlspecialchars(addslashes($contact['message'])); ?>')">
+                                                    <i class="fas fa-eye me-1"></i>View
+                                                </button>
                                             </td>
                                             <td><?php echo formatDate($contact['created_at'], 'M j, Y H:i'); ?></td>
                                             <td>
@@ -412,11 +670,23 @@ if ($isLoggedIn) {
                                                     <?php echo ucfirst($contact['status']); ?>
                                                 </span>
                                             </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <?php if ($contact['status'] === 'new'): ?>
+                                                        <button class="btn btn-success" onclick="markAsRead(<?php echo $contact['id']; ?>)" title="Mark as Read">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <button class="btn btn-danger" onclick="deleteContact(<?php echo $contact['id']; ?>)" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="9" class="text-center py-4 text-muted">
+                                        <td colspan="10" class="text-center py-4 text-muted">
                                             No contact submissions found
                                         </td>
                                     </tr>
@@ -431,14 +701,19 @@ if ($isLoggedIn) {
             <div id="testimonials" class="tab-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Client Testimonials</h2>
-                    <button class="btn btn-primary" onclick="refreshTestimonials()">
-                        <i class="fas fa-sync-alt me-2"></i>Refresh
-                    </button>
+                    <div>
+                        <button class="btn btn-success me-2" onclick="showAddTestimonialModal()">
+                            <i class="fas fa-plus me-2"></i>Add New
+                        </button>
+                        <button class="btn btn-primary" onclick="refreshTestimonials()">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="data-table">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0" id="testimonialsTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
@@ -450,44 +725,60 @@ if ($isLoggedIn) {
                                     <th>Featured</th>
                                     <th>Status</th>
                                     <th>Date</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!empty($testimonials)): ?>
                                     <?php foreach ($testimonials as $testimonial): ?>
-                                        <tr>
+                                        <tr data-id="<?php echo $testimonial['id']; ?>">
                                             <td><?php echo $testimonial['id']; ?></td>
                                             <td><?php echo htmlspecialchars($testimonial['name']); ?></td>
                                             <td><?php echo htmlspecialchars($testimonial['company'] ?: '-'); ?></td>
                                             <td><?php echo htmlspecialchars($testimonial['position'] ?: '-'); ?></td>
                                             <td>
-                                                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<?php echo htmlspecialchars($testimonial['testimonial']); ?>">
-                                                    <?php echo htmlspecialchars(truncateText($testimonial['testimonial'], 50)); ?>
-                                                </span>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="showTestimonial(<?php echo $testimonial['id']; ?>, '<?php echo htmlspecialchars(addslashes($testimonial['testimonial'])); ?>')">
+                                                    <i class="fas fa-eye me-1"></i>View
+                                                </button>
                                             </td>
                                             <td>
                                                 <div class="text-warning">
                                                     <?php for ($i = 1; $i <= 5; $i++): ?>
                                                         <i class="fas fa-star <?php echo $i <= $testimonial['rating'] ? '' : 'text-muted'; ?>"></i>
                                                     <?php endfor; ?>
+                                                    <small class="text-muted ms-1">(<?php echo $testimonial['rating']; ?>)</small>
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="badge bg-<?php echo $testimonial['is_featured'] ? 'warning' : 'secondary'; ?>">
+                                                <button class="btn btn-sm btn-<?php echo $testimonial['is_featured'] ? 'warning' : 'outline-secondary'; ?>" 
+                                                        onclick="toggleFeatured(<?php echo $testimonial['id']; ?>)">
+                                                    <i class="fas fa-star me-1"></i>
                                                     <?php echo $testimonial['is_featured'] ? 'Featured' : 'Regular'; ?>
-                                                </span>
+                                                </button>
                                             </td>
                                             <td>
-                                                <span class="badge bg-<?php echo $testimonial['is_active'] ? 'success' : 'danger'; ?>">
+                                                <button class="btn btn-sm btn-<?php echo $testimonial['is_active'] ? 'success' : 'danger'; ?>" 
+                                                        onclick="toggleStatus(<?php echo $testimonial['id']; ?>)">
+                                                    <i class="fas fa-<?php echo $testimonial['is_active'] ? 'check' : 'times'; ?> me-1"></i>
                                                     <?php echo $testimonial['is_active'] ? 'Active' : 'Inactive'; ?>
-                                                </span>
+                                                </button>
                                             </td>
                                             <td><?php echo formatDate($testimonial['created_at'], 'M j, Y'); ?></td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-primary" onclick="editTestimonial(<?php echo $testimonial['id']; ?>)" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-danger" onclick="deleteTestimonial(<?php echo $testimonial['id']; ?>)" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="9" class="text-center py-4 text-muted">
+                                        <td colspan="10" class="text-center py-4 text-muted">
                                             No testimonials found
                                         </td>
                                     </tr>
@@ -502,23 +793,29 @@ if ($isLoggedIn) {
             <div id="database" class="tab-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Database Management</h2>
+                    <button class="btn btn-primary" onclick="checkDatabaseStatus()">
+                        <i class="fas fa-sync-alt me-2"></i>Check Status
+                    </button>
                 </div>
                 
                 <div class="row">
-                    <div class="col-lg-12">
+                    <div class="col-lg-8">
                         <div class="data-table p-4">
-                            <h5 class="mb-3">Database Operations</h5>
-                            <p class="text-muted mb-4">Manage your database tables and sample data.</p>
+                            <h5 class="mb-3">
+                                <i class="fas fa-database me-2 text-primary"></i>
+                                Database Operations
+                            </h5>
+                            <p class="text-muted mb-4">Manage your database tables and monitor connection status.</p>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <div class="card">
+                                    <div class="card border-success">
                                         <div class="card-body">
                                             <h6 class="card-title">
                                                 <i class="fas fa-plus-circle text-success me-2"></i>
                                                 Create Tables
                                             </h6>
-                                            <p class="card-text">Create all required database tables with sample data.</p>
+                                            <p class="card-text">Initialize all required database tables with sample data.</p>
                                             <a href="?action=create_tables" class="btn btn-success">
                                                 <i class="fas fa-database me-2"></i>Create Tables
                                             </a>
@@ -527,30 +824,147 @@ if ($isLoggedIn) {
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <div class="card">
+                                    <div class="card border-info">
                                         <div class="card-body">
                                             <h6 class="card-title">
                                                 <i class="fas fa-info-circle text-info me-2"></i>
-                                                Database Info
+                                                Connection Status
                                             </h6>
-                                            <p class="card-text">Current database connection status and information.</p>
-                                            <div class="text-success">
-                                                <i class="fas fa-check-circle me-2"></i>Connected
+                                            <p class="card-text">Current database connection information.</p>
+                                            <div id="connectionStatus">
+                                                <div class="text-success">
+                                                    <i class="fas fa-check-circle me-2"></i>Connected
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="alert alert-info">
-                                <h6><i class="fas fa-info-circle me-2"></i>Database Configuration</h6>
-                                <p class="mb-2">Make sure to update the database configuration in <code>config/database.php</code> for your hosting environment.</p>
-                                <ul class="mb-0">
-                                    <li>For local development: Use localhost with your MySQL credentials</li>
-                                    <li>For hosting: Update with your hosting provider's database details</li>
-                                    <li>Tables will be created automatically when you click "Create Tables"</li>
-                                </ul>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-tools text-warning me-2"></i>
+                                                Debug Information
+                                            </h6>
+                                            <p class="card-text">View detailed database debug information.</p>
+                                            <a href="/app-debug.php" target="_blank" class="btn btn-warning">
+                                                <i class="fas fa-bug me-2"></i>Debug Page
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-secondary">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-cog text-secondary me-2"></i>
+                                                Setup Page
+                                            </h6>
+                                            <p class="card-text">Run the initial setup and configuration.</p>
+                                            <a href="/setup.php" target="_blank" class="btn btn-secondary">
+                                                <i class="fas fa-play me-2"></i>Setup
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="data-table p-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-chart-bar me-2 text-info"></i>
+                                Database Statistics
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Total Contacts</span>
+                                    <span class="badge bg-primary"><?php echo $contactCount; ?></span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-primary" style="width: <?php echo min(100, ($contactCount / 100) * 100); ?>%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>New Contacts</span>
+                                    <span class="badge bg-warning"><?php echo $newContactCount; ?></span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-warning" style="width: <?php echo $contactCount > 0 ? ($newContactCount / $contactCount) * 100 : 0; ?>%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Testimonials</span>
+                                    <span class="badge bg-success"><?php echo $testimonialCount; ?></span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width: <?php echo min(100, ($testimonialCount / 50) * 100); ?>%"></div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="mb-3">
+                                <h6 class="text-muted">Database Type</h6>
+                                <span class="badge bg-info">
+                                    <?php 
+                                    try {
+                                        $driver = $db->getDriverName();
+                                        echo ucfirst($driver);
+                                    } catch (Exception $e) {
+                                        echo 'Unknown';
+                                    }
+                                    ?>
+                                </span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="text-muted">Connection Type</h6>
+                                <span class="badge bg-secondary">
+                                    <?php 
+                                    try {
+                                        $info = $db->getConnectionInfo();
+                                        echo $info['type'] ?? 'Unknown';
+                                    } catch (Exception $e) {
+                                        echo 'Unknown';
+                                    }
+                                    ?>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-4">
+                    <h6><i class="fas fa-info-circle me-2"></i>Database Configuration</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Current Environment:</strong> <?php echo getenv('RAILWAY_ENVIRONMENT') ?: 'Development'; ?></p>
+                            <p class="mb-2"><strong>Fallback Chain:</strong></p>
+                            <ol class="mb-0">
+                                <li>Railway Database URL</li>
+                                <li>Supabase Transaction Pooler</li>
+                                <li>SQLite (Local fallback)</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Features:</strong></p>
+                            <ul class="mb-0">
+                                <li>IPv4/IPv6 Compatible</li>
+                                <li>Auto-connection fallback</li>
+                                <li>Real-time monitoring</li>
+                                <li>Error logging</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -558,46 +972,477 @@ if ($isLoggedIn) {
         </div>
     <?php endif; ?>
 
+    <!-- Message Modal -->
+    <div class="modal fade" id="messageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Contact Message</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="messageContent"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Testimonial Modal -->
+    <div class="modal fade" id="testimonialModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Testimonial</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="testimonialContent"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Testimonial Modal -->
+    <div class="modal fade" id="addTestimonialModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Testimonial</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addTestimonialForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="testimonialName" class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="testimonialName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="testimonialCompany" class="form-label">Company</label>
+                            <input type="text" class="form-control" id="testimonialCompany" name="company">
+                        </div>
+                        <div class="mb-3">
+                            <label for="testimonialPosition" class="form-label">Position</label>
+                            <input type="text" class="form-control" id="testimonialPosition" name="position">
+                        </div>
+                        <div class="mb-3">
+                            <label for="testimonialText" class="form-label">Testimonial *</label>
+                            <textarea class="form-control" id="testimonialText" name="testimonial" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="testimonialRating" class="form-label">Rating</label>
+                            <select class="form-control" id="testimonialRating" name="rating">
+                                <option value="5">5 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="3">3 Stars</option>
+                                <option value="2">2 Stars</option>
+                                <option value="1">1 Star</option>
+                            </select>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="testimonialFeatured" name="is_featured">
+                            <label class="form-check-label" for="testimonialFeatured">
+                                Mark as Featured
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Add Testimonial</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Tab switching functionality
-        document.querySelectorAll('.admin-nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                if (this.getAttribute('href').startsWith('#')) {
-                    e.preventDefault();
-                    
-                    // Remove active class from all links and content
-                    document.querySelectorAll('.admin-nav-link').forEach(l => l.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    
-                    // Add active class to clicked link
-                    this.classList.add('active');
-                    
-                    // Show corresponding content
-                    const tabId = this.getAttribute('href').substring(1);
-                    const tabContent = document.getElementById(tabId);
-                    if (tabContent) {
-                        tabContent.classList.add('active');
-                    }
-                }
-            });
+        // Global variables
+        let currentTab = 'dashboard';
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            showNotifications();
         });
         
-        // Refresh functions
+        // Initialize all event listeners
+        function initializeEventListeners() {
+            // Tab switching functionality
+            document.querySelectorAll('.admin-nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (this.getAttribute('href').startsWith('#')) {
+                        e.preventDefault();
+                        switchTab(this.getAttribute('href').substring(1));
+                    }
+                });
+            });
+            
+            // Add testimonial form submission
+            const addTestimonialForm = document.getElementById('addTestimonialForm');
+            if (addTestimonialForm) {
+                addTestimonialForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    submitTestimonial();
+                });
+            }
+            
+            // Mobile sidebar toggle
+            initializeMobileSidebar();
+        }
+        
+        // Tab switching with better UX
+        function switchTab(tabId) {
+            // Remove active class from all links and content
+            document.querySelectorAll('.admin-nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked link
+            const activeLink = document.querySelector(`[href="#${tabId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // Show corresponding content with animation
+            const tabContent = document.getElementById(tabId);
+            if (tabContent) {
+                tabContent.classList.add('active');
+                tabContent.style.opacity = '0';
+                setTimeout(() => {
+                    tabContent.style.opacity = '1';
+                }, 50);
+            }
+            
+            currentTab = tabId;
+            
+            // Auto-refresh data when switching to specific tabs
+            if (tabId === 'contacts') {
+                refreshContacts();
+            } else if (tabId === 'testimonials') {
+                refreshTestimonials();
+            }
+        }
+        
+        // AJAX helper function
+        function makeAjaxRequest(data, callback) {
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (callback) callback(result);
+                if (result.message) {
+                    showNotification(result.message, result.success ? 'success' : 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('An error occurred. Please try again.', 'error');
+            });
+        }
+        
+        // Contact management functions
+        function markAsRead(contactId) {
+            makeAjaxRequest({
+                action: 'mark_contact_read',
+                contact_id: contactId
+            }, function(result) {
+                if (result.success) {
+                    const row = document.querySelector(`#contactsTable tr[data-id="${contactId}"]`);
+                    if (row) {
+                        const statusBadge = row.querySelector('.badge');
+                        statusBadge.className = 'badge bg-info';
+                        statusBadge.textContent = 'Read';
+                        
+                        const actionBtn = row.querySelector('.btn-success');
+                        if (actionBtn) actionBtn.remove();
+                    }
+                    updateDashboardStats();
+                }
+            });
+        }
+        
+        function deleteContact(contactId) {
+            if (confirm('Are you sure you want to delete this contact?')) {
+                makeAjaxRequest({
+                    action: 'delete_contact',
+                    contact_id: contactId
+                }, function(result) {
+                    if (result.success) {
+                        const row = document.querySelector(`#contactsTable tr[data-id="${contactId}"]`);
+                        if (row) {
+                            row.style.transition = 'opacity 0.3s';
+                            row.style.opacity = '0';
+                            setTimeout(() => row.remove(), 300);
+                        }
+                        updateDashboardStats();
+                    }
+                });
+            }
+        }
+        
+        function markAllRead() {
+            const newContacts = document.querySelectorAll('#contactsTable .badge.bg-warning');
+            if (newContacts.length === 0) {
+                showNotification('No new contacts to mark as read.', 'info');
+                return;
+            }
+            
+            if (confirm(`Mark all ${newContacts.length} new contacts as read?`)) {
+                newContacts.forEach(badge => {
+                    const row = badge.closest('tr');
+                    const contactId = row.dataset.id;
+                    markAsRead(contactId);
+                });
+            }
+        }
+        
+        function showMessage(contactId, message) {
+            document.getElementById('messageContent').innerHTML = `
+                <div class="alert alert-light">
+                    <strong>Contact ID:</strong> ${contactId}
+                </div>
+                <div class="border rounded p-3" style="white-space: pre-wrap;">${message}</div>
+            `;
+            new bootstrap.Modal(document.getElementById('messageModal')).show();
+        }
+        
+        // Testimonial management functions
+        function toggleStatus(testimonialId) {
+            makeAjaxRequest({
+                action: 'toggle_testimonial_status',
+                testimonial_id: testimonialId
+            }, function(result) {
+                if (result.success) {
+                    location.reload(); // Simple reload for now
+                }
+            });
+        }
+        
+        function toggleFeatured(testimonialId) {
+            makeAjaxRequest({
+                action: 'toggle_testimonial_featured',
+                testimonial_id: testimonialId
+            }, function(result) {
+                if (result.success) {
+                    location.reload(); // Simple reload for now
+                }
+            });
+        }
+        
+        function showTestimonial(testimonialId, testimonial) {
+            document.getElementById('testimonialContent').innerHTML = `
+                <div class="alert alert-light">
+                    <strong>Testimonial ID:</strong> ${testimonialId}
+                </div>
+                <div class="border rounded p-3" style="white-space: pre-wrap;">${testimonial}</div>
+            `;
+            new bootstrap.Modal(document.getElementById('testimonialModal')).show();
+        }
+        
+        function showAddTestimonialModal() {
+            document.getElementById('addTestimonialForm').reset();
+            new bootstrap.Modal(document.getElementById('addTestimonialModal')).show();
+        }
+        
+        function submitTestimonial() {
+            const form = document.getElementById('addTestimonialForm');
+            const formData = new FormData(form);
+            formData.append('action', 'add_testimonial');
+            
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            makeAjaxRequest(data, function(result) {
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addTestimonialModal')).hide();
+                    refreshTestimonials();
+                }
+            });
+        }
+        
+        // Database management functions
+        function checkDatabaseStatus() {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML = '<div class="text-info"><i class="fas fa-spinner fa-spin me-2"></i>Checking...</div>';
+            
+            fetch('/api/admin.php?action=get_stats')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        statusDiv.innerHTML = `
+                            <div class="text-success">
+                                <i class="fas fa-check-circle me-2"></i>Connected
+                            </div>
+                            <small class="text-muted">Last checked: ${new Date().toLocaleTimeString()}</small>
+                        `;
+                        showNotification('Database connection verified', 'success');
+                    } else {
+                        statusDiv.innerHTML = `
+                            <div class="text-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Connection Error
+                            </div>
+                            <small class="text-muted">${result.message}</small>
+                        `;
+                        showNotification('Database connection failed', 'error');
+                    }
+                })
+                .catch(error => {
+                    statusDiv.innerHTML = `
+                        <div class="text-danger">
+                            <i class="fas fa-times-circle me-2"></i>Network Error
+                        </div>
+                        <small class="text-muted">Cannot reach server</small>
+                    `;
+                    showNotification('Network error occurred', 'error');
+                });
+        }
+        
+        // Enhanced refresh functions with API calls
         function refreshContacts() {
-            location.reload();
+            if (document.getElementById('contactsTable')) {
+                const table = document.getElementById('contactsTable');
+                table.classList.add('loading');
+                setTimeout(() => location.reload(), 500);
+            } else {
+                location.reload();
+            }
         }
         
         function refreshTestimonials() {
-            location.reload();
+            if (document.getElementById('testimonialsTable')) {
+                const table = document.getElementById('testimonialsTable');
+                table.classList.add('loading');
+                setTimeout(() => location.reload(), 500);
+            } else {
+                location.reload();
+            }
         }
         
-        // Auto-refresh every 30 seconds for new contacts
+        function updateDashboardStats() {
+            // This would ideally be an AJAX call to get updated stats
+            setTimeout(() => location.reload(), 1000);
+        }
+        
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'error' ? 'alert-danger' : 'alert-info';
+            
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        function showNotifications() {
+            // Show any PHP-generated notifications
+            const alerts = document.querySelectorAll('.alert:not(.position-fixed)');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.style.transition = 'opacity 0.3s';
+                        alert.style.opacity = '0';
+                        setTimeout(() => alert.remove(), 300);
+                    }
+                }, 5000);
+            });
+        }
+        
+        // Mobile sidebar functionality
+        function initializeMobileSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            const toggleBtn = document.getElementById('mobileToggle');
+            
+            if (toggleBtn && sidebar && overlay) {
+                // Toggle sidebar
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    overlay.classList.toggle('show');
+                });
+                
+                // Close sidebar when clicking overlay
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                });
+                
+                // Close sidebar when clicking nav links on mobile
+                document.querySelectorAll('.admin-nav-link').forEach(link => {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth <= 992) {
+                            sidebar.classList.remove('show');
+                            overlay.classList.remove('show');
+                        }
+                    });
+                });
+                
+                // Close on escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        sidebar.classList.remove('show');
+                        overlay.classList.remove('show');
+                    }
+                });
+            }
+        }
+        
+        // Auto-refresh for real-time updates
         setInterval(function() {
-            // Could implement AJAX refresh here
+            if (currentTab === 'dashboard') {
+                // Could implement AJAX refresh for dashboard stats
+            }
         }, 30000);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        switchTab('dashboard');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        switchTab('contacts');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        switchTab('testimonials');
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        switchTab('database');
+                        break;
+                }
+            }
+        });
     </script>
     
     <style>
