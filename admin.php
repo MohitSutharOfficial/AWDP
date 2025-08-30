@@ -1060,6 +1060,65 @@ if ($isLoggedIn) {
         </div>
     </div>
 
+    <!-- Edit Testimonial Modal -->
+    <div class="modal fade" id="editTestimonialModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Testimonial</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editTestimonialForm">
+                    <input type="hidden" id="editTestimonialId" name="id">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="editTestimonialName" class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="editTestimonialName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTestimonialCompany" class="form-label">Company</label>
+                            <input type="text" class="form-control" id="editTestimonialCompany" name="company">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTestimonialPosition" class="form-label">Position</label>
+                            <input type="text" class="form-control" id="editTestimonialPosition" name="position">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTestimonialText" class="form-label">Testimonial *</label>
+                            <textarea class="form-control" id="editTestimonialText" name="testimonial" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTestimonialRating" class="form-label">Rating</label>
+                            <select class="form-control" id="editTestimonialRating" name="rating">
+                                <option value="5">5 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="3">3 Stars</option>
+                                <option value="2">2 Stars</option>
+                                <option value="1">1 Star</option>
+                            </select>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="editTestimonialActive" name="is_active">
+                            <label class="form-check-label" for="editTestimonialActive">
+                                Active
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editTestimonialFeatured" name="is_featured">
+                            <label class="form-check-label" for="editTestimonialFeatured">
+                                Mark as Featured
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Testimonial</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -1091,6 +1150,15 @@ if ($isLoggedIn) {
                 addTestimonialForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     submitTestimonial();
+                });
+            }
+            
+            // Edit testimonial form submission
+            const editTestimonialForm = document.getElementById('editTestimonialForm');
+            if (editTestimonialForm) {
+                editTestimonialForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    updateTestimonial();
                 });
             }
             
@@ -1497,6 +1565,232 @@ if ($isLoggedIn) {
                         setTimeout(() => alert.remove(), 300);
                     }
                 }, 5000);
+            });
+        }
+        
+        // Contact and Testimonial Management Functions
+        function viewContact(contactId) {
+            fetch(`api/admin-crud.php?action=get_contact&id=${contactId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const contact = data.data;
+                        document.getElementById('contactContent').innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Name:</strong> ${contact.name}</p>
+                                    <p><strong>Email:</strong> ${contact.email}</p>
+                                    <p><strong>Phone:</strong> ${contact.phone || 'N/A'}</p>
+                                    <p><strong>Company:</strong> ${contact.company || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Subject:</strong> ${contact.subject}</p>
+                                    <p><strong>Date:</strong> ${new Date(contact.created_at).toLocaleDateString()}</p>
+                                    <p><strong>Status:</strong> ${contact.is_read ? 'Read' : 'New'}</p>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Message:</h6>
+                                <div class="border p-3 bg-light">${contact.message}</div>
+                            </div>
+                        `;
+                        
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('contactModal'));
+                        modal.show();
+                        
+                        // Mark as read if not already
+                        if (!contact.is_read) {
+                            markAsRead(contactId);
+                        }
+                    } else {
+                        showNotification('Error loading contact details', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error loading contact details', 'error');
+                });
+        }
+        
+        function viewTestimonial(testimonialId) {
+            fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const testimonial = data.data;
+                        const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
+                        
+                        document.getElementById('testimonialContent').innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Name:</strong> ${testimonial.name}</p>
+                                    <p><strong>Company:</strong> ${testimonial.company || 'N/A'}</p>
+                                    <p><strong>Position:</strong> ${testimonial.position || 'N/A'}</p>
+                                    <p><strong>Rating:</strong> <span class="text-warning">${stars}</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Status:</strong> ${testimonial.is_active ? 'Active' : 'Inactive'}</p>
+                                    <p><strong>Featured:</strong> ${testimonial.is_featured ? 'Yes' : 'No'}</p>
+                                    <p><strong>Date:</strong> ${new Date(testimonial.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Testimonial:</h6>
+                                <div class="border p-3 bg-light">${testimonial.testimonial}</div>
+                            </div>
+                        `;
+                        
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('testimonialModal'));
+                        modal.show();
+                    } else {
+                        showNotification('Error loading testimonial details', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error loading testimonial details', 'error');
+                });
+        }
+        
+        function editTestimonial(testimonialId) {
+            fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const testimonial = data.data;
+                        
+                        // Fill the edit form
+                        document.getElementById('editTestimonialId').value = testimonial.id;
+                        document.getElementById('editTestimonialName').value = testimonial.name;
+                        document.getElementById('editTestimonialCompany').value = testimonial.company || '';
+                        document.getElementById('editTestimonialPosition').value = testimonial.position || '';
+                        document.getElementById('editTestimonialText').value = testimonial.testimonial;
+                        document.getElementById('editTestimonialRating').value = testimonial.rating;
+                        document.getElementById('editTestimonialActive').checked = testimonial.is_active;
+                        document.getElementById('editTestimonialFeatured').checked = testimonial.is_featured;
+                        
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('editTestimonialModal'));
+                        modal.show();
+                    } else {
+                        showNotification('Error loading testimonial for editing', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error loading testimonial for editing', 'error');
+                });
+        }
+        
+        function deleteTestimonial(testimonialId) {
+            if (confirm('Are you sure you want to delete this testimonial?')) {
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=delete_testimonial&testimonial_id=${testimonialId}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Testimonial deleted successfully', 'success');
+                        refreshTestimonials();
+                        updateDashboardStats();
+                    } else {
+                        showNotification(data.message || 'Error deleting testimonial', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error deleting testimonial', 'error');
+                });
+            }
+        }
+        
+        function submitTestimonial() {
+            const form = document.getElementById('addTestimonialForm');
+            const formData = new FormData(form);
+            formData.append('action', 'add_testimonial');
+            
+            // Convert FormData to URLSearchParams
+            const params = new URLSearchParams();
+            for (let [key, value] of formData.entries()) {
+                params.append(key, value);
+            }
+            
+            fetch('api/admin-crud.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: params.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Testimonial added successfully', 'success');
+                    form.reset();
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addTestimonialModal'));
+                    modal.hide();
+                    
+                    refreshTestimonials();
+                    updateDashboardStats();
+                } else {
+                    showNotification(data.message || 'Error adding testimonial', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error adding testimonial', 'error');
+            });
+        }
+        
+        function updateTestimonial() {
+            const form = document.getElementById('editTestimonialForm');
+            const formData = new FormData(form);
+            formData.append('action', 'update_testimonial');
+            
+            // Change 'id' to 'testimonial_id' for API compatibility
+            const id = formData.get('id');
+            formData.delete('id');
+            formData.append('testimonial_id', id);
+            
+            // Convert FormData to URLSearchParams
+            const params = new URLSearchParams();
+            for (let [key, value] of formData.entries()) {
+                params.append(key, value);
+            }
+            
+            fetch('api/admin-crud.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: params.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Testimonial updated successfully', 'success');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editTestimonialModal'));
+                    modal.hide();
+                    
+                    refreshTestimonials();
+                    updateDashboardStats();
+                } else {
+                    showNotification(data.message || 'Error updating testimonial', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error updating testimonial', 'error');
             });
         }
         

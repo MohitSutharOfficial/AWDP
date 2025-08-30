@@ -5,7 +5,15 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/navigation.php';
+require_once __DIR__ . '/../includes        case 'delete_testimonial':
+            $testimonialId = intval($_POST['testimonial_id'] ?? $_POST['id'] ?? 0);
+            if ($testimonialId > 0) {
+                $db->execute("DELETE FROM testimonials WHERE id = ?", [$testimonialId]);
+                $response = ['success' => true, 'message' => 'Testimonial deleted successfully'];
+            } else {
+                $response['message'] = 'Invalid testimonial ID';
+            }
+            break;on.php';
 
 // Start session
 if (session_status() == PHP_SESSION_NONE) {
@@ -216,8 +224,32 @@ try {
             }
             break;
             
+        case 'create_testimonial':
+            // Alias for add_testimonial for backward compatibility
+            $data = [
+                'name' => trim($_POST['name'] ?? ''),
+                'company' => trim($_POST['company'] ?? ''),
+                'position' => trim($_POST['position'] ?? ''),
+                'testimonial' => trim($_POST['testimonial'] ?? ''),
+                'rating' => max(1, min(5, intval($_POST['rating'] ?? 5))),
+                'image_url' => trim($_POST['image_url'] ?? ''),
+                'is_featured' => isset($_POST['is_featured']) ? 1 : 0,
+                'is_active' => 1
+            ];
+            
+            if (!empty($data['name']) && !empty($data['testimonial'])) {
+                $db->execute(
+                    "INSERT INTO testimonials (name, company, position, testimonial, rating, image_url, is_featured, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                    [$data['name'], $data['company'], $data['position'], $data['testimonial'], $data['rating'], $data['image_url'], $data['is_featured'], $data['is_active']]
+                );
+                $response = ['success' => true, 'message' => 'Testimonial added successfully'];
+            } else {
+                $response['message'] = 'Name and testimonial are required';
+            }
+            break;
+            
         case 'update_testimonial':
-            $testimonialId = intval($_POST['testimonial_id'] ?? 0);
+            $testimonialId = intval($_POST['testimonial_id'] ?? $_POST['id'] ?? 0);
             if ($testimonialId > 0) {
                 $data = [
                     'name' => trim($_POST['name'] ?? ''),
@@ -226,13 +258,14 @@ try {
                     'testimonial' => trim($_POST['testimonial'] ?? ''),
                     'rating' => max(1, min(5, intval($_POST['rating'] ?? 5))),
                     'image_url' => trim($_POST['image_url'] ?? ''),
-                    'is_featured' => isset($_POST['is_featured']) ? 1 : 0
+                    'is_featured' => isset($_POST['is_featured']) ? 1 : 0,
+                    'is_active' => isset($_POST['is_active']) ? 1 : 0
                 ];
                 
                 if (!empty($data['name']) && !empty($data['testimonial'])) {
                     $db->execute(
-                        "UPDATE testimonials SET name = ?, company = ?, position = ?, testimonial = ?, rating = ?, image_url = ?, is_featured = ?, updated_at = NOW() WHERE id = ?",
-                        [$data['name'], $data['company'], $data['position'], $data['testimonial'], $data['rating'], $data['image_url'], $data['is_featured'], $testimonialId]
+                        "UPDATE testimonials SET name = ?, company = ?, position = ?, testimonial = ?, rating = ?, image_url = ?, is_featured = ?, is_active = ?, updated_at = NOW() WHERE id = ?",
+                        [$data['name'], $data['company'], $data['position'], $data['testimonial'], $data['rating'], $data['image_url'], $data['is_featured'], $data['is_active'], $testimonialId]
                     );
                     $response = ['success' => true, 'message' => 'Testimonial updated successfully'];
                 } else {
