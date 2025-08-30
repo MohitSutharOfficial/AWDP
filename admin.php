@@ -1191,11 +1191,36 @@ if ($isLoggedIn) {
             
             // Test API connectivity on page load
             testAPIConnection();
+            
+            // Debug: Check for stuck loading states after 5 seconds
+            setTimeout(checkForStuckLoading, 5000);
         });
+        
+        // Debug function to check for stuck loading states
+        function checkForStuckLoading() {
+            const loadingOverlay = document.getElementById('globalLoading');
+            if (loadingOverlay && loadingOverlay.style.display !== 'none') {
+                console.warn('Loading overlay is still visible after 5 seconds');
+                console.log('Forcing loading overlay to hide...');
+                hideLoading();
+                showNotification('Loading timeout detected and cleared', 'warning');
+            }
+            
+            // Check for loading buttons
+            const loadingButtons = document.querySelectorAll('.btn-loading');
+            if (loadingButtons.length > 0) {
+                console.warn('Found loading buttons:', loadingButtons);
+                loadingButtons.forEach(btn => {
+                    setButtonLoading(btn, false);
+                });
+            }
+        }
         
         // Test API connectivity
         function testAPIConnection() {
             console.log('Testing API connection...');
+            
+            // Don't show loading initially for test
             fetch('api/admin-crud.php?action=test')
                 .then(response => {
                     console.log('API test response status:', response.status);
@@ -1207,10 +1232,9 @@ if ($isLoggedIn) {
                 .then(data => {
                     console.log('API test successful:', data);
                     if (data.success) {
-                        // API is working, load dashboard data
-                        updateDashboardStats();
-                        refreshContacts();
-                        refreshTestimonials();
+                        console.log('API is working, loading dashboard data...');
+                        // API is working, now try to load dashboard data one by one
+                        loadDashboardData();
                     } else {
                         showNotification('API test failed: ' + data.message, 'error');
                     }
@@ -1226,6 +1250,23 @@ if ($isLoggedIn) {
                         timestamp: new Date().toISOString()
                     });
                 });
+        }
+        
+        // Load dashboard data step by step
+        function loadDashboardData() {
+            console.log('Loading dashboard stats...');
+            updateDashboardStats();
+            
+            // Only load contacts and testimonials if we're on those tabs
+            setTimeout(() => {
+                console.log('Loading contacts data...');
+                refreshContacts();
+            }, 1000);
+            
+            setTimeout(() => {
+                console.log('Loading testimonials data...');
+                refreshTestimonials();
+            }, 2000);
         }
         
         // Initialize all event listeners
@@ -1302,8 +1343,8 @@ if ($isLoggedIn) {
             }
         }
         
-        // AJAX helper function
-        function makeAjaxRequest(data, callback) {
+        // AJAX helper function with error callback
+        function makeAjaxRequest(data, successCallback, errorCallback) {
             console.log('Making API request to:', 'api/admin-crud.php', 'with data:', data);
             
             fetch('api/admin-crud.php', {
@@ -1349,19 +1390,23 @@ if ($isLoggedIn) {
                     const result = JSON.parse(text);
                     console.log('Parsed JSON result:', result);
                     
-                    if (callback) callback(result);
+                    if (successCallback) successCallback(result);
                     if (result.message) {
                         showNotification(result.message, result.success ? 'success' : 'error');
                     }
                 } catch (e) {
                     console.error('JSON parse error:', e);
                     console.error('Response text that failed to parse:', text);
-                    showNotification('Server returned invalid response: ' + text.substring(0, 100), 'error');
+                    const errorMsg = 'Server returned invalid response: ' + text.substring(0, 100);
+                    showNotification(errorMsg, 'error');
+                    if (errorCallback) errorCallback(errorMsg);
                 }
             })
             .catch(error => {
                 console.error('Fetch error:', error);
-                showNotification('Network error: ' + error.message, 'error');
+                const errorMsg = 'Network error: ' + error.message;
+                showNotification(errorMsg, 'error');
+                if (errorCallback) errorCallback(errorMsg);
             });
         }
         
@@ -1394,6 +1439,11 @@ if ($isLoggedIn) {
                 } else {
                     showNotification('Error marking contact as read', 'error');
                 }
+            }, function(error) {
+                // Error callback - always clear loading state
+                hideLoading();
+                setButtonLoading(`mark-read-${contactId}`, false);
+                showNotification('Error marking contact as read: ' + error, 'error');
             });
         }
         
@@ -1445,14 +1495,21 @@ if ($isLoggedIn) {
             if (confirm(`Mark all ${newContacts.length} new contacts as read?`)) {
                 showLoading('Marking all contacts as read...');
                 
-                makeAjaxRequest('api/admin-crud.php?action=mark_all_contacts_read', {
-                    method: 'POST'
+                // Use GET request for mark all read
+                fetch('api/admin-crud.php?action=mark_all_contacts_read', {
+                    method: 'GET'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
                 })
                 .then(data => {
                     hideLoading();
                     if (data.success) {
-                        showNotification(data.message, 'success');
-                        loadContacts(); // Refresh the contacts list
+                        showNotification(data.message || 'All contacts marked as read', 'success');
+                        refreshContacts(); // Refresh the contacts list
                         updateDashboardStats();
                     } else {
                         showNotification(data.message || 'Failed to mark all contacts as read', 'error');
@@ -1461,7 +1518,7 @@ if ($isLoggedIn) {
                 .catch(error => {
                     hideLoading();
                     console.error('Error marking all as read:', error);
-                    showNotification('Error marking all contacts as read', 'error');
+                    showNotification('Error marking all contacts as read: ' + error.message, 'error');
                 });
             }
         }
@@ -1754,6 +1811,9 @@ if ($isLoggedIn) {
         let globalLoadingTimeout = null;
         
         function showLoading(message = 'Processing...') {
+            console.log('showLoading called with message:', message);
+            console.trace('showLoading call stack'); // This will show us where it's called from
+            
             const loadingOverlay = document.getElementById('globalLoading');
             const loadingText = loadingOverlay.querySelector('.mt-3');
             loadingText.textContent = message;
@@ -1783,12 +1843,26 @@ if ($isLoggedIn) {
             }
         }
         
-        function setButtonLoading(button, loading = true) {
+        function setButtonLoading(buttonOrId, loading = true) {
+            // Handle both button element and button ID
+            let button;
+            if (typeof buttonOrId === 'string') {
+                button = document.getElementById(buttonOrId);
+                if (!button) {
+                    console.warn('Button not found with ID:', buttonOrId);
+                    return;
+                }
+            } else {
+                button = buttonOrId;
+            }
+            
+            if (!button) return;
+            
             if (loading) {
                 button.disabled = true;
                 button.classList.add('btn-loading');
                 button.setAttribute('data-original-text', button.textContent);
-                button.textContent = 'Processing...';
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
             } else {
                 button.disabled = false;
                 button.classList.remove('btn-loading');
