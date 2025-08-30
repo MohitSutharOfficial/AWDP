@@ -11,8 +11,9 @@ switch($path) {
     case '':
     case 'index':
     case 'index.html':
-        // Serve homepage
-        readfile('index.html');
+    case 'home':
+        // Serve dynamic homepage
+        include 'home.php';
         break;
         
     case 'admin':
@@ -33,11 +34,6 @@ switch($path) {
     case 'setup':
         // Include database setup
         include 'setup.php';
-        break;
-        
-    case 'railway-test':
-        // Include test page
-        include 'railway-test.php';
         break;
         
     default:
@@ -65,7 +61,7 @@ switch($path) {
         
         // 404 - redirect to homepage
         http_response_code(404);
-        readfile('index.html');
+        include 'home.php';
         break;
 }
 ?>

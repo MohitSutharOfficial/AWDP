@@ -189,42 +189,6 @@ try {
         </div>
     </section>
 
-    <!-- Stats Section -->
-    <section class="py-5 bg-light">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="stats-card">
-                        <div class="stats-number">500+</div>
-                        <h5>Projects Completed</h5>
-                        <p class="text-muted">Successfully delivered projects</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="stats-card">
-                        <div class="stats-number">50+</div>
-                        <h5>Happy Clients</h5>
-                        <p class="text-muted">Satisfied customers worldwide</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="stats-card">
-                        <div class="stats-number">10+</div>
-                        <h5>Years Experience</h5>
-                        <p class="text-muted">Industry expertise</p>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="stats-card">
-                        <div class="stats-number">24/7</div>
-                        <h5>Support</h5>
-                        <p class="text-muted">Round-the-clock assistance</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Testimonials Section -->
     <section class="py-5">
         <div class="container">
@@ -296,11 +260,11 @@ try {
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="py-5 bg-gradient-secondary">
+    <!-- Call to Action Section -->
+    <section class="py-5 bg-gradient-primary text-white">
         <div class="container">
             <div class="row">
-                <div class="col-lg-8 mx-auto text-center text-white">
+                <div class="col-lg-8 mx-auto text-center">
                     <h2 class="mb-4">Ready to Join Our Success Stories?</h2>
                     <p class="mb-4">Let's work together to create something amazing for your business.</p>
                     <a href="contact.php" class="btn btn-light btn-lg me-3">Start Your Project</a>
@@ -310,102 +274,23 @@ try {
         </div>
     </section>
 
-    <!-- Trust Indicators -->
-    <section class="py-5 bg-light">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 text-center mb-5">
-                    <h3>Trusted by Industry Leaders</h3>
-                    <p class="text-muted">We've had the privilege of working with amazing companies</p>
-                </div>
-            </div>
-            <div class="row align-items-center">
-                <div class="col-lg-2 col-md-4 col-6 mb-4 text-center">
-                    <div class="trust-logo">
-                        <i class="fab fa-microsoft fa-3x text-muted"></i>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6 mb-4 text-center">
-                    <div class="trust-logo">
-                        <i class="fab fa-google fa-3x text-muted"></i>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6 mb-4 text-center">
-                    <div class="trust-logo">
-                        <i class="fab fa-amazon fa-3x text-muted"></i>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6 mb-4 text-center">
-                    <div class="trust-logo">
-                        <i class="fab fa-apple fa-3x text-muted"></i>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6 mb-4 text-center">
-                    <div class="trust-logo">
-                        <i class="fab fa-facebook fa-3x text-muted"></i>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6 mb-4 text-center">
-                    <div class="trust-logo">
-                        <i class="fab fa-twitter fa-3x text-muted"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-white py-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-4 mb-4">
-                    <h5><i class="fas fa-code text-primary me-2"></i>TechCorp Solutions</h5>
-                    <p class="mb-3">Innovative technology solutions for modern businesses.</p>
-                    <div class="social-links">
-                        <a href="#" class="text-white me-3"><i class="fab fa-facebook"></i></a>
-                        <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="text-white me-3"><i class="fab fa-linkedin"></i></a>
-                        <a href="#" class="text-white me-3"><i class="fab fa-github"></i></a>
-                    </div>
-                </div>
-                <div class="col-lg-2 mb-4">
-                    <h6>Quick Links</h6>
-                    <ul class="list-unstyled">
-                        <li><a href="index.html#home" class="text-white-50">Home</a></li>
-                        <li><a href="index.html#about" class="text-white-50">About</a></li>
-                        <li><a href="index.html#services" class="text-white-50">Services</a></li>
-                        <li><a href="contact.php" class="text-white-50">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 mb-4">
-                    <h6>Services</h6>
-                    <ul class="list-unstyled">
-                        <li><span class="text-white-50">Web Development</span></li>
-                        <li><span class="text-white-50">Mobile Apps</span></li>
-                        <li><span class="text-white-50">Cloud Solutions</span></li>
-                        <li><span class="text-white-50">Consulting</span></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 mb-4">
-                    <h6>Contact Info</h6>
-                    <p class="text-white-50 mb-1"><i class="fas fa-envelope me-2"></i>info@techcorp.com</p>
-                    <p class="text-white-50 mb-1"><i class="fas fa-phone me-2"></i>+1 (555) 123-4567</p>
-                    <p class="text-white-50"><i class="fas fa-map-marker-alt me-2"></i>123 Tech Street, Digital City</p>
-                </div>
-            </div>
-            <hr class="my-4">
-            <div class="row">
-                <div class="col-lg-12 text-center">
-                    <p class="text-white-50 mb-0">&copy; 2025 TechCorp Solutions. All rights reserved.</p>
-                </div>
-            </div>
-        </div>
-    </footer>
-
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Custom JavaScript -->
     <script src="assets/js/main.js"></script>
+    
+    <!-- AJAX Form Enhancement -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any testimonial-specific JavaScript here
+        console.log('Testimonials page loaded');
+        
+        // Example: Auto-refresh testimonials every 30 seconds
+        setInterval(function() {
+            // You could implement auto-refresh here if needed
+        }, 30000);
+    });
+    </script>
 </body>
 </html>

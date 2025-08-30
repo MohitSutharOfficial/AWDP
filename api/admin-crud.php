@@ -660,6 +660,281 @@ try {
             ];
             break;
             
+        // ==================== SERVICES CRUD ====================
+        case 'get_services':
+            $page = max(1, intval($_GET['page'] ?? 1));
+            $limit = min(100, max(10, intval($_GET['limit'] ?? 20)));
+            $offset = ($page - 1) * $limit;
+            $search = $_GET['search'] ?? '';
+            
+            $whereClause = '';
+            $params = [];
+            
+            if (!empty($search)) {
+                $whereClause = "WHERE title ILIKE ? OR description ILIKE ?";
+                $searchParam = "%{$search}%";
+                $params = [$searchParam, $searchParam];
+            }
+            
+            $params = array_merge($params, [$limit, $offset]);
+            
+            $services = $db->fetchAll("SELECT * FROM services {$whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?", $params);
+            
+            $countParams = array_slice($params, 0, -2);
+            $total = $db->fetchOne("SELECT COUNT(*) as count FROM services {$whereClause}", $countParams)['count'] ?? 0;
+            
+            $response = [
+                'success' => true,
+                'data' => $services,
+                'pagination' => [
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                    'pages' => ceil($total / $limit)
+                ]
+            ];
+            break;
+            
+        case 'add_service':
+            $data = [
+                'title' => trim($_POST['title'] ?? ''),
+                'description' => trim($_POST['description'] ?? ''),
+                'icon' => trim($_POST['icon'] ?? ''),
+                'price_range' => trim($_POST['price_range'] ?? ''),
+                'features' => $_POST['features'] ?? [],
+                'is_active' => 1,
+                'sort_order' => intval($_POST['sort_order'] ?? 0)
+            ];
+            
+            if (!empty($data['title']) && !empty($data['description'])) {
+                $featuresJson = is_array($data['features']) ? json_encode($data['features']) : $data['features'];
+                $db->execute(
+                    "INSERT INTO services (title, description, icon, price_range, features, is_active, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                    [$data['title'], $data['description'], $data['icon'], $data['price_range'], $featuresJson, $data['is_active'], $data['sort_order']]
+                );
+                $response = ['success' => true, 'message' => 'Service added successfully'];
+            } else {
+                $response['message'] = 'Title and description are required';
+            }
+            break;
+            
+        case 'update_service':
+            $serviceId = intval($_POST['service_id'] ?? 0);
+            if ($serviceId > 0) {
+                $data = [
+                    'title' => trim($_POST['title'] ?? ''),
+                    'description' => trim($_POST['description'] ?? ''),
+                    'icon' => trim($_POST['icon'] ?? ''),
+                    'price_range' => trim($_POST['price_range'] ?? ''),
+                    'features' => $_POST['features'] ?? [],
+                    'sort_order' => intval($_POST['sort_order'] ?? 0)
+                ];
+                
+                if (!empty($data['title']) && !empty($data['description'])) {
+                    $featuresJson = is_array($data['features']) ? json_encode($data['features']) : $data['features'];
+                    $db->execute(
+                        "UPDATE services SET title = ?, description = ?, icon = ?, price_range = ?, features = ?, sort_order = ?, updated_at = NOW() WHERE id = ?",
+                        [$data['title'], $data['description'], $data['icon'], $data['price_range'], $featuresJson, $data['sort_order'], $serviceId]
+                    );
+                    $response = ['success' => true, 'message' => 'Service updated successfully'];
+                } else {
+                    $response['message'] = 'Title and description are required';
+                }
+            } else {
+                $response['message'] = 'Invalid service ID';
+            }
+            break;
+            
+        case 'delete_service':
+            $serviceId = intval($_POST['service_id'] ?? 0);
+            if ($serviceId > 0) {
+                $db->execute("DELETE FROM services WHERE id = ?", [$serviceId]);
+                $response = ['success' => true, 'message' => 'Service deleted successfully'];
+            } else {
+                $response['message'] = 'Invalid service ID';
+            }
+            break;
+            
+        case 'toggle_service_status':
+            $serviceId = intval($_POST['service_id'] ?? 0);
+            if ($serviceId > 0) {
+                $current = $db->fetchOne("SELECT is_active FROM services WHERE id = ?", [$serviceId]);
+                if ($current) {
+                    $newStatus = $current['is_active'] ? 0 : 1;
+                    $db->execute("UPDATE services SET is_active = ?, updated_at = NOW() WHERE id = ?", [$newStatus, $serviceId]);
+                    $response = ['success' => true, 'message' => 'Service status updated successfully'];
+                } else {
+                    $response['message'] = 'Service not found';
+                }
+            } else {
+                $response['message'] = 'Invalid service ID';
+            }
+            break;
+            
+        // ==================== PROJECTS CRUD ====================
+        case 'get_projects':
+            $page = max(1, intval($_GET['page'] ?? 1));
+            $limit = min(100, max(10, intval($_GET['limit'] ?? 20)));
+            $offset = ($page - 1) * $limit;
+            $search = $_GET['search'] ?? '';
+            
+            $whereClause = '';
+            $params = [];
+            
+            if (!empty($search)) {
+                $whereClause = "WHERE title ILIKE ? OR description ILIKE ?";
+                $searchParam = "%{$search}%";
+                $params = [$searchParam, $searchParam];
+            }
+            
+            $params = array_merge($params, [$limit, $offset]);
+            
+            $projects = $db->fetchAll("SELECT * FROM projects {$whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?", $params);
+            
+            $countParams = array_slice($params, 0, -2);
+            $total = $db->fetchOne("SELECT COUNT(*) as count FROM projects {$whereClause}", $countParams)['count'] ?? 0;
+            
+            $response = [
+                'success' => true,
+                'data' => $projects,
+                'pagination' => [
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                    'pages' => ceil($total / $limit)
+                ]
+            ];
+            break;
+            
+        case 'add_project':
+            $data = [
+                'title' => trim($_POST['title'] ?? ''),
+                'description' => trim($_POST['description'] ?? ''),
+                'technologies' => $_POST['technologies'] ?? [],
+                'image_url' => trim($_POST['image_url'] ?? ''),
+                'project_url' => trim($_POST['project_url'] ?? ''),
+                'github_url' => trim($_POST['github_url'] ?? ''),
+                'client_name' => trim($_POST['client_name'] ?? ''),
+                'completion_date' => $_POST['completion_date'] ?? null,
+                'is_featured' => isset($_POST['is_featured']) ? 1 : 0,
+                'is_active' => 1
+            ];
+            
+            if (!empty($data['title']) && !empty($data['description'])) {
+                $technologiesJson = is_array($data['technologies']) ? json_encode($data['technologies']) : $data['technologies'];
+                $db->execute(
+                    "INSERT INTO projects (title, description, technologies, image_url, project_url, github_url, client_name, completion_date, is_featured, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                    [$data['title'], $data['description'], $technologiesJson, $data['image_url'], $data['project_url'], $data['github_url'], $data['client_name'], $data['completion_date'], $data['is_featured'], $data['is_active']]
+                );
+                $response = ['success' => true, 'message' => 'Project added successfully'];
+            } else {
+                $response['message'] = 'Title and description are required';
+            }
+            break;
+            
+        case 'update_project':
+            $projectId = intval($_POST['project_id'] ?? 0);
+            if ($projectId > 0) {
+                $data = [
+                    'title' => trim($_POST['title'] ?? ''),
+                    'description' => trim($_POST['description'] ?? ''),
+                    'technologies' => $_POST['technologies'] ?? [],
+                    'image_url' => trim($_POST['image_url'] ?? ''),
+                    'project_url' => trim($_POST['project_url'] ?? ''),
+                    'github_url' => trim($_POST['github_url'] ?? ''),
+                    'client_name' => trim($_POST['client_name'] ?? ''),
+                    'completion_date' => $_POST['completion_date'] ?? null,
+                    'is_featured' => isset($_POST['is_featured']) ? 1 : 0
+                ];
+                
+                if (!empty($data['title']) && !empty($data['description'])) {
+                    $technologiesJson = is_array($data['technologies']) ? json_encode($data['technologies']) : $data['technologies'];
+                    $db->execute(
+                        "UPDATE projects SET title = ?, description = ?, technologies = ?, image_url = ?, project_url = ?, github_url = ?, client_name = ?, completion_date = ?, is_featured = ?, updated_at = NOW() WHERE id = ?",
+                        [$data['title'], $data['description'], $technologiesJson, $data['image_url'], $data['project_url'], $data['github_url'], $data['client_name'], $data['completion_date'], $data['is_featured'], $projectId]
+                    );
+                    $response = ['success' => true, 'message' => 'Project updated successfully'];
+                } else {
+                    $response['message'] = 'Title and description are required';
+                }
+            } else {
+                $response['message'] = 'Invalid project ID';
+            }
+            break;
+            
+        case 'delete_project':
+            $projectId = intval($_POST['project_id'] ?? 0);
+            if ($projectId > 0) {
+                $db->execute("DELETE FROM projects WHERE id = ?", [$projectId]);
+                $response = ['success' => true, 'message' => 'Project deleted successfully'];
+            } else {
+                $response['message'] = 'Invalid project ID';
+            }
+            break;
+            
+        case 'toggle_project_status':
+            $projectId = intval($_POST['project_id'] ?? 0);
+            if ($projectId > 0) {
+                $current = $db->fetchOne("SELECT is_active FROM projects WHERE id = ?", [$projectId]);
+                if ($current) {
+                    $newStatus = $current['is_active'] ? 0 : 1;
+                    $db->execute("UPDATE projects SET is_active = ?, updated_at = NOW() WHERE id = ?", [$newStatus, $projectId]);
+                    $response = ['success' => true, 'message' => 'Project status updated successfully'];
+                } else {
+                    $response['message'] = 'Project not found';
+                }
+            } else {
+                $response['message'] = 'Invalid project ID';
+            }
+            break;
+            
+        // ==================== ADDITIONAL OPERATIONS ====================
+        case 'toggle_newsletter_status':
+            $subscriberId = intval($_POST['subscriber_id'] ?? 0);
+            if ($subscriberId > 0) {
+                $current = $db->fetchOne("SELECT is_active FROM newsletter_subscribers WHERE id = ?", [$subscriberId]);
+                if ($current) {
+                    $newStatus = $current['is_active'] ? 0 : 1;
+                    $db->execute("UPDATE newsletter_subscribers SET is_active = ? WHERE id = ?", [$newStatus, $subscriberId]);
+                    $response = ['success' => true, 'message' => 'Subscriber status updated successfully'];
+                } else {
+                    $response['message'] = 'Subscriber not found';
+                }
+            } else {
+                $response['message'] = 'Invalid subscriber ID';
+            }
+            break;
+            
+        case 'delete_newsletter_subscriber':
+            $subscriberId = intval($_POST['subscriber_id'] ?? 0);
+            if ($subscriberId > 0) {
+                $db->execute("DELETE FROM newsletter_subscribers WHERE id = ?", [$subscriberId]);
+                $response = ['success' => true, 'message' => 'Subscriber deleted successfully'];
+            } else {
+                $response['message'] = 'Invalid subscriber ID';
+            }
+            break;
+            
+        case 'get_database_stats':
+            $stats = [
+                'services' => $db->fetchOne("SELECT COUNT(*) as count FROM services")['count'] ?? 0,
+                'projects' => $db->fetchOne("SELECT COUNT(*) as count FROM projects")['count'] ?? 0,
+                'testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials")['count'] ?? 0,
+                'blog_posts' => $db->fetchOne("SELECT COUNT(*) as count FROM blog_posts")['count'] ?? 0,
+                'newsletter_subscribers' => $db->fetchOne("SELECT COUNT(*) as count FROM newsletter_subscribers")['count'] ?? 0,
+                'active_services' => $db->fetchOne("SELECT COUNT(*) as count FROM services WHERE is_active = 1")['count'] ?? 0,
+                'active_projects' => $db->fetchOne("SELECT COUNT(*) as count FROM projects WHERE is_active = 1")['count'] ?? 0,
+                'active_testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials WHERE is_active = 1")['count'] ?? 0,
+                'published_posts' => $db->fetchOne("SELECT COUNT(*) as count FROM blog_posts WHERE status = 'published'")['count'] ?? 0,
+                'active_subscribers' => $db->fetchOne("SELECT COUNT(*) as count FROM newsletter_subscribers WHERE is_active = 1")['count'] ?? 0
+            ];
+            
+            $response = [
+                'success' => true,
+                'data' => $stats
+            ];
+            break;
+            
         default:
             $response['message'] = 'Unknown action: ' . $action;
     }
