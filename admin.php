@@ -1544,14 +1544,74 @@ if ($isLoggedIn) {
             }
         }
         
-        function showMessage(contactId, message) {
-            document.getElementById('messageContent').innerHTML = `
-                <div class="alert alert-light">
-                    <strong>Contact ID:</strong> ${contactId}
-                </div>
-                <div class="border rounded p-3" style="white-space: pre-wrap;">${message}</div>
-            `;
-            new bootstrap.Modal(document.getElementById('messageModal')).show();
+        function showMessage(contactId, message = null) {
+            // Show modal immediately
+            const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+            modal.show();
+            
+            // If message is provided directly, use it
+            if (message !== null) {
+                document.getElementById('messageContent').innerHTML = `
+                    <div class="alert alert-light">
+                        <strong>Contact ID:</strong> ${contactId}
+                    </div>
+                    <div class="border rounded p-3" style="white-space: pre-wrap;">${message}</div>
+                `;
+                return;
+            }
+            
+            // Otherwise, get message from cached data or API
+            let contactData = null;
+            if (dataCache.contacts) {
+                contactData = dataCache.contacts.find(c => c.id == contactId);
+            }
+            
+            if (contactData && contactData.message) {
+                // Use cached message
+                document.getElementById('messageContent').innerHTML = `
+                    <div class="alert alert-light">
+                        <strong>Contact ID:</strong> ${contactId}
+                    </div>
+                    <div class="border rounded p-3" style="white-space: pre-wrap;">${contactData.message}</div>
+                `;
+            } else {
+                // Show loading and fetch from API
+                document.getElementById('messageContent').innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                        <p class="mt-2">Loading message...</p>
+                    </div>
+                `;
+                
+                fetch(`api/admin-crud.php?action=get_contact&id=${contactId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            document.getElementById('messageContent').innerHTML = `
+                                <div class="alert alert-light">
+                                    <strong>Contact ID:</strong> ${contactId}
+                                </div>
+                                <div class="border rounded p-3" style="white-space: pre-wrap;">${data.data.message}</div>
+                            `;
+                        } else {
+                            document.getElementById('messageContent').innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Error loading message
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('messageContent').innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading message
+                            </div>
+                        `;
+                    });
+            }
         }
         
         // Testimonial management functions
@@ -2056,33 +2116,76 @@ if ($isLoggedIn) {
         
         // Contact and Testimonial Management Functions
         function viewContact(contactId) {
-            fetch(`api/admin-crud.php?action=get_contact&id=${contactId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.data) {
-                        const contact = data.data;
+            // Show modal immediately for better UX
+            const modal = new bootstrap.Modal(document.getElementById('contactModal'));
+            modal.show();
+            
+            // Show loading state
+            document.getElementById('contactContent').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p class="mt-2">Loading contact details...</p>
+                </div>
+            `;
+            
+            // Try to use cached data first
+            let contactData = null;
+            if (dataCache.contacts) {
+                contactData = dataCache.contacts.find(c => c.id == contactId);
+            }
+            
+            if (contactData) {
+                // Use cached data immediately
+                displayContactDetails(contactData);
+            } else {
+                // Fetch from API if not in cache
+                fetch(`api/admin-crud.php?action=get_contact&id=${contactId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            displayContactDetails(data.data);
+                        } else {
+                            document.getElementById('contactContent').innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Error loading contact details
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
                         document.getElementById('contactContent').innerHTML = `
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Name:</strong> ${contact.name}</p>
-                                    <p><strong>Email:</strong> ${contact.email}</p>
-                                    <p><strong>Phone:</strong> ${contact.phone || 'N/A'}</p>
-                                    <p><strong>Company:</strong> ${contact.company || 'N/A'}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Subject:</strong> ${contact.subject}</p>
-                                    <p><strong>Date:</strong> ${new Date(contact.created_at).toLocaleDateString()}</p>
-                                    <p><strong>Status:</strong> ${contact.status === 'read' ? 'Read' : 'New'}</p>
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <h6>Message:</h6>
-                                <div class="border p-3 bg-light">${contact.message}</div>
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading contact details
                             </div>
                         `;
-                        
-                        // Show modal
-                        const modal = new bootstrap.Modal(document.getElementById('contactModal'));
+                    });
+            }
+        }
+        
+        function displayContactDetails(contact) {
+            document.getElementById('contactContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> ${contact.name}</p>
+                        <p><strong>Email:</strong> <a href="mailto:${contact.email}">${contact.email}</a></p>
+                        <p><strong>Phone:</strong> ${contact.phone || 'N/A'}</p>
+                        <p><strong>Company:</strong> ${contact.company || 'N/A'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Subject:</strong> ${contact.subject || 'N/A'}</p>
+                        <p><strong>Date:</strong> ${new Date(contact.created_at).toLocaleDateString()}</p>
+                        <p><strong>Status:</strong> ${contact.status === 'read' ? 'Read' : 'New'}</p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6>Message:</h6>
+                    <div class="border p-3 bg-light rounded">${contact.message}</div>
+                </div>
+            `;
+        }
                         modal.show();
                         
                         // Mark as read if not already
@@ -2100,74 +2203,143 @@ if ($isLoggedIn) {
         }
         
         function viewTestimonial(testimonialId) {
-            fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.data) {
-                        const testimonial = data.data;
-                        const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
-                        
+            // Show modal immediately for better UX
+            const modal = new bootstrap.Modal(document.getElementById('testimonialModal'));
+            modal.show();
+            
+            // Show loading state
+            document.getElementById('testimonialContent').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p class="mt-2">Loading testimonial details...</p>
+                </div>
+            `;
+            
+            // Try to use cached data first
+            let testimonialData = null;
+            if (dataCache.testimonials) {
+                testimonialData = dataCache.testimonials.find(t => t.id == testimonialId);
+            }
+            
+            if (testimonialData) {
+                // Use cached data immediately
+                displayTestimonialDetails(testimonialData);
+            } else {
+                // Fetch from API if not in cache
+                fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            displayTestimonialDetails(data.data);
+                        } else {
+                            document.getElementById('testimonialContent').innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Error loading testimonial details
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
                         document.getElementById('testimonialContent').innerHTML = `
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Name:</strong> ${testimonial.name}</p>
-                                    <p><strong>Company:</strong> ${testimonial.company || 'N/A'}</p>
-                                    <p><strong>Position:</strong> ${testimonial.position || 'N/A'}</p>
-                                    <p><strong>Rating:</strong> <span class="text-warning">${stars}</span></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Status:</strong> ${testimonial.is_active ? 'Active' : 'Inactive'}</p>
-                                    <p><strong>Featured:</strong> ${testimonial.is_featured ? 'Yes' : 'No'}</p>
-                                    <p><strong>Date:</strong> ${new Date(testimonial.created_at).toLocaleDateString()}</p>
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <h6>Testimonial:</h6>
-                                <div class="border p-3 bg-light">${testimonial.testimonial}</div>
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading testimonial details
                             </div>
                         `;
-                        
-                        // Show modal
-                        const modal = new bootstrap.Modal(document.getElementById('testimonialModal'));
-                        modal.show();
-                    } else {
-                        showNotification('Error loading testimonial details', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Error loading testimonial details', 'error');
-                });
+                    });
+            }
+        }
+        
+        function displayTestimonialDetails(testimonial) {
+            const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
+            
+            document.getElementById('testimonialContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> ${testimonial.name}</p>
+                        <p><strong>Company:</strong> ${testimonial.company || 'N/A'}</p>
+                        <p><strong>Position:</strong> ${testimonial.position || 'N/A'}</p>
+                        <p><strong>Rating:</strong> <span class="text-warning">${stars}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> ${testimonial.is_active ? 'Active' : 'Inactive'}</p>
+                        <p><strong>Featured:</strong> ${testimonial.is_featured ? 'Yes' : 'No'}</p>
+                        <p><strong>Date:</strong> ${new Date(testimonial.created_at).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6>Testimonial:</h6>
+                    <div class="border p-3 bg-light rounded">${testimonial.testimonial}</div>
+                </div>
+            `;
         }
         
         function editTestimonial(testimonialId) {
-            fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.data) {
-                        const testimonial = data.data;
-                        
-                        // Fill the edit form
-                        document.getElementById('editTestimonialId').value = testimonial.id;
-                        document.getElementById('editTestimonialName').value = testimonial.name;
-                        document.getElementById('editTestimonialCompany').value = testimonial.company || '';
-                        document.getElementById('editTestimonialPosition').value = testimonial.position || '';
-                        document.getElementById('editTestimonialText').value = testimonial.testimonial;
-                        document.getElementById('editTestimonialRating').value = testimonial.rating;
-                        document.getElementById('editTestimonialActive').checked = testimonial.is_active;
-                        document.getElementById('editTestimonialFeatured').checked = testimonial.is_featured;
-                        
-                        // Show modal
-                        const modal = new bootstrap.Modal(document.getElementById('editTestimonialModal'));
-                        modal.show();
-                    } else {
+            // Show modal immediately for better UX
+            const modal = new bootstrap.Modal(document.getElementById('editTestimonialModal'));
+            modal.show();
+            
+            // Try to use cached data first
+            let testimonialData = null;
+            if (dataCache.testimonials) {
+                testimonialData = dataCache.testimonials.find(t => t.id == testimonialId);
+            }
+            
+            if (testimonialData) {
+                // Use cached data immediately
+                populateEditForm(testimonialData);
+            } else {
+                // Show loading state in form
+                setFormLoading(true);
+                
+                // Fetch from API if not in cache
+                fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        setFormLoading(false);
+                        if (data.success && data.data) {
+                            populateEditForm(data.data);
+                        } else {
+                            showNotification('Error loading testimonial for editing', 'error');
+                            modal.hide();
+                        }
+                    })
+                    .catch(error => {
+                        setFormLoading(false);
+                        console.error('Error:', error);
                         showNotification('Error loading testimonial for editing', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Error loading testimonial for editing', 'error');
-                });
+                        modal.hide();
+                    });
+            }
+        }
+        
+        function populateEditForm(testimonial) {
+            // Fill the edit form
+            document.getElementById('editTestimonialId').value = testimonial.id;
+            document.getElementById('editTestimonialName').value = testimonial.name;
+            document.getElementById('editTestimonialCompany').value = testimonial.company || '';
+            document.getElementById('editTestimonialPosition').value = testimonial.position || '';
+            document.getElementById('editTestimonialText').value = testimonial.testimonial;
+            document.getElementById('editTestimonialRating').value = testimonial.rating;
+            document.getElementById('editTestimonialActive').checked = testimonial.is_active;
+            document.getElementById('editTestimonialFeatured').checked = testimonial.is_featured;
+        }
+        
+        function setFormLoading(isLoading) {
+            const form = document.getElementById('editTestimonialForm');
+            const inputs = form.querySelectorAll('input, textarea, select');
+            
+            inputs.forEach(input => {
+                input.disabled = isLoading;
+                if (isLoading) {
+                    input.placeholder = 'Loading...';
+                } else {
+                    input.placeholder = '';
+                }
+            });
+        }
         }
         
         function deleteTestimonial(testimonialId) {
