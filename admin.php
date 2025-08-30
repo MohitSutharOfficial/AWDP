@@ -224,6 +224,8 @@ if ($isLoggedIn) {
             transition: all 0.3s ease;
             border-left: 3px solid transparent;
             position: relative;
+            cursor: pointer;
+            z-index: 10;
         }
         
         .admin-nav-link:hover, .admin-nav-link.active {
@@ -1186,6 +1188,13 @@ if ($isLoggedIn) {
         
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Starting initialization...');
+            
+            // Add temporary alert to debug
+            console.log('Checking if elements exist...');
+            const navLinks = document.querySelectorAll('.admin-nav-link');
+            console.log('Found nav links on page load:', navLinks.length);
+            
             initializeEventListeners();
             showNotifications();
             
@@ -2141,6 +2150,67 @@ if ($isLoggedIn) {
                 }, 5000);
             });
         }
+        
+        // Debug function for testing navigation
+        function testNavigation() {
+            console.log('Testing navigation manually...');
+            switchTab('contacts');
+        }
+        
+        // Make function available globally for debugging
+        window.testNavigation = testNavigation;
+        window.switchTab = switchTab;
+        
+        // Emergency fix: Add click handlers directly to navigation
+        function addDirectClickHandlers() {
+            console.log('Adding direct click handlers as emergency fix...');
+            
+            const dashboardLink = document.querySelector('[href="#dashboard"]');
+            const contactsLink = document.querySelector('[href="#contacts"]');
+            const testimonialsLink = document.querySelector('[href="#testimonials"]');
+            const databaseLink = document.querySelector('[href="#database"]');
+            
+            if (contactsLink) {
+                contactsLink.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('Contacts clicked via direct handler');
+                    switchTab('contacts');
+                    return false;
+                };
+            }
+            
+            if (testimonialsLink) {
+                testimonialsLink.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('Testimonials clicked via direct handler');
+                    switchTab('testimonials');
+                    return false;
+                };
+            }
+            
+            if (databaseLink) {
+                databaseLink.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('Database clicked via direct handler');
+                    switchTab('database');
+                    return false;
+                };
+            }
+            
+            if (dashboardLink) {
+                dashboardLink.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('Dashboard clicked via direct handler');
+                    switchTab('dashboard');
+                    return false;
+                };
+            }
+            
+            console.log('Direct handlers added');
+        }
+        
+        // Add direct handlers after a short delay to ensure DOM is ready
+        setTimeout(addDirectClickHandlers, 1000);
         
         // Contact and Testimonial Management Functions
         function viewContact(contactId) {
