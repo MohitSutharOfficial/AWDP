@@ -46,9 +46,15 @@ class Database {
         
         // Try Railway DATABASE_URL first
         $databaseUrl = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL');
+        
+        // Debug logging
+        error_log("Attempting database connection...");
+        error_log("DATABASE_URL exists: " . ($databaseUrl ? 'Yes' : 'No'));
+        
         if ($databaseUrl && !$connected) {
             try {
                 $dbParts = parse_url($databaseUrl);
+                error_log("Parsed DATABASE_URL - Host: " . ($dbParts['host'] ?? 'none') . ", Port: " . ($dbParts['port'] ?? 'none'));
                 $dsn = sprintf(
                     "pgsql:host=%s;port=%d;dbname=%s;sslmode=require",
                     $dbParts['host'],
