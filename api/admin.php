@@ -5,6 +5,7 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/navigation.php';
 
 // Start session
 if (session_status() == PHP_SESSION_NONE) {
@@ -23,6 +24,7 @@ if (!$isLoggedIn) {
 // Initialize database connection
 try {
     $db = new Database();
+    $stats = new AdminStats($db);
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database connection error']);
@@ -30,27 +32,35 @@ try {
 }
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
+$entity = $_GET['entity'] ?? $_POST['entity'] ?? '';
 $response = ['success' => false, 'message' => ''];
 
 try {
     switch ($action) {
         case 'get_stats':
-            $stats = [
-                'contacts' => $db->fetchOne("SELECT COUNT(*) as count FROM contacts")['count'] ?? 0,
-                'new_contacts' => $db->fetchOne("SELECT COUNT(*) as count FROM contacts WHERE status = 'new'")['count'] ?? 0,
-                'testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials")['count'] ?? 0,
-                'active_testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials WHERE is_active = 1")['count'] ?? 0
-            ];
-            $response = ['success' => true, 'data' => $stats];
+            $allStats = $stats->getAllStats();
+            $response = ['success' => true, 'data' => $allStats];
             break;
             
+        // CONTACTS CRUD
         case 'get_contacts':
             $page = max(1, intval($_GET['page'] ?? 1));
             $limit = min(100, max(10, intval($_GET['limit'] ?? 20)));
             $offset = ($page - 1) * $limit;
+            $search = $_GET['search'] ?? '';
             
-            $contacts = $db->fetchAll("SELECT * FROM contacts ORDER BY created_at DESC LIMIT ? OFFSET ?", [$limit, $offset]);
-            $total = $db->fetchOne("SELECT COUNT(*) as count FROM contacts")['count'] ?? 0;
+            $whereClause = '';
+            $params = [$limit, $offset];
+            
+            if (!empty($search)) {
+                $whereClause = "WHERE name ILIKE ? OR email ILIKE ? OR company ILIKE ?";
+                $searchParam = "%{$search}%";
+                $params = [$searchParam, $searchParam, $searchParam, $limit, $offset];
+            }
+            
+            $contacts = $db->fetchAll("SELECT * FROM contacts {$whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?", $params);
+            $total = $db->fetchOne("SELECT COUNT(*) as count FROM contacts {$whereClause}", 
+                                   $search ? [$searchParam, $searchParam, $searchParam] : [])['count'] ?? 0;
             
             $response = [
                 'success' => true,
