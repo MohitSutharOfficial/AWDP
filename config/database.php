@@ -300,6 +300,61 @@ class Database {
         return $this->connection->lastInsertId();
     }
     
+    // CRUD Operations
+    public function insert($table, $data) {
+        $fields = array_keys($data);
+        $placeholders = ':' . implode(', :', $fields);
+        $sql = "INSERT INTO {$table} (" . implode(', ', $fields) . ") VALUES ({$placeholders})";
+        
+        $params = [];
+        foreach ($data as $key => $value) {
+            $params[':' . $key] = $value;
+        }
+        
+        $this->execute($sql, $params);
+        return $this->lastInsertId();
+    }
+    
+    public function update($table, $data, $where, $whereParams = []) {
+        $setParts = [];
+        foreach (array_keys($data) as $field) {
+            $setParts[] = "{$field} = :{$field}";
+        }
+        
+        $sql = "UPDATE {$table} SET " . implode(', ', $setParts) . " WHERE {$where}";
+        
+        $params = [];
+        foreach ($data as $key => $value) {
+            $params[':' . $key] = $value;
+        }
+        $params = array_merge($params, $whereParams);
+        
+        return $this->execute($sql, $params);
+    }
+    
+    public function delete($table, $where, $whereParams = []) {
+        $sql = "DELETE FROM {$table} WHERE {$where}";
+        return $this->execute($sql, $whereParams);
+    }
+    
+    public function select($table, $fields = '*', $where = '', $whereParams = [], $orderBy = '', $limit = '') {
+        $sql = "SELECT {$fields} FROM {$table}";
+        
+        if (!empty($where)) {
+            $sql .= " WHERE {$where}";
+        }
+        
+        if (!empty($orderBy)) {
+            $sql .= " ORDER BY {$orderBy}";
+        }
+        
+        if (!empty($limit)) {
+            $sql .= " LIMIT {$limit}";
+        }
+        
+        return $this->fetchAll($sql, $whereParams);
+    }
+    
     public function beginTransaction() {
         return $this->connection->beginTransaction();
     }

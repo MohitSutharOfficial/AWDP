@@ -1271,12 +1271,24 @@ if ($isLoggedIn) {
         
         // Initialize all event listeners
         function initializeEventListeners() {
+            console.log('Initializing event listeners...');
+            
             // Tab switching functionality
-            document.querySelectorAll('.admin-nav-link').forEach(link => {
+            const navLinks = document.querySelectorAll('.admin-nav-link');
+            console.log('Found nav links:', navLinks.length);
+            
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                console.log('Adding click listener to:', href);
+                
                 link.addEventListener('click', function(e) {
-                    if (this.getAttribute('href').startsWith('#')) {
+                    console.log('Nav link clicked:', href);
+                    
+                    if (href && href.startsWith('#')) {
                         e.preventDefault();
-                        switchTab(this.getAttribute('href').substring(1));
+                        const tabId = href.substring(1);
+                        console.log('Switching to tab:', tabId);
+                        switchTab(tabId);
                     }
                 });
             });
@@ -1301,31 +1313,47 @@ if ($isLoggedIn) {
             
             // Mobile sidebar toggle
             initializeMobileSidebar();
+            
+            console.log('Event listeners initialized successfully');
         }
         
         // Tab switching with better UX
         function switchTab(tabId) {
+            console.log('switchTab called with:', tabId);
+            
             // Remove active class from all links and content
-            document.querySelectorAll('.admin-nav-link').forEach(l => l.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const allLinks = document.querySelectorAll('.admin-nav-link');
+            const allContent = document.querySelectorAll('.tab-content');
+            
+            console.log('Found links:', allLinks.length, 'content sections:', allContent.length);
+            
+            allLinks.forEach(l => l.classList.remove('active'));
+            allContent.forEach(c => c.classList.remove('active'));
             
             // Add active class to clicked link
             const activeLink = document.querySelector(`[href="#${tabId}"]`);
+            console.log('Active link found:', activeLink);
+            
             if (activeLink) {
                 activeLink.classList.add('active');
+                console.log('Added active class to link');
             }
             
             // Show corresponding content with animation
             const tabContent = document.getElementById(tabId);
+            console.log('Tab content found:', tabContent);
+            
             if (tabContent) {
                 tabContent.classList.add('active');
                 tabContent.style.opacity = '0';
                 setTimeout(() => {
                     tabContent.style.opacity = '1';
                 }, 50);
+                console.log('Added active class to content');
             }
             
             currentTab = tabId;
+            console.log('Current tab set to:', currentTab);
             
             // Load data when switching to specific tabs (without page reload)
             if (tabId === 'contacts') {
