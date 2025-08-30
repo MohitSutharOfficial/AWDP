@@ -1706,14 +1706,33 @@ if ($isLoggedIn) {
                         <i class="fas fa-check"></i>
                     </button>` : '';
                 
+                // Format date
+                const dateFormatted = contact.created_at ? 
+                    new Date(contact.created_at).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    }) : 'N/A';
+                
                 tableRows += `
                     <tr data-id="${contact.id}">
                         <td>${contact.id}</td>
                         <td>${contact.name}</td>
-                        <td>${contact.email}</td>
-                        <td>${contact.subject}</td>
+                        <td>
+                            <a href="mailto:${contact.email}" class="text-decoration-none">
+                                ${contact.email}
+                            </a>
+                        </td>
+                        <td>${contact.phone || 'N/A'}</td>
+                        <td>${contact.company || 'N/A'}</td>
+                        <td>${contact.subject || 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showMessage(${contact.id}, '${(contact.message || '').replace(/'/g, "\\'")}', '${contact.subject || ''}')" title="View Message">
+                                <i class="fas fa-eye me-1"></i>View
+                            </button>
+                        </td>
+                        <td>${dateFormatted}</td>
                         <td>${statusBadge}</td>
-                        <td>${new Date(contact.created_at).toLocaleDateString()}</td>
                         <td>
                             <div class="btn-group btn-group-sm">
                                 ${markReadBtn}
