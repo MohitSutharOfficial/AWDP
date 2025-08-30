@@ -1122,11 +1122,19 @@ if ($isLoggedIn) {
             
             currentTab = tabId;
             
-            // Auto-refresh data when switching to specific tabs
+            // Load data when switching to specific tabs (without page reload)
             if (tabId === 'contacts') {
-                refreshContacts();
+                // Only refresh if table exists and is empty or needs updating
+                const table = document.getElementById('contactsTable');
+                if (table && table.querySelector('tbody').children.length === 0) {
+                    refreshContacts();
+                }
             } else if (tabId === 'testimonials') {
-                refreshTestimonials();
+                // Only refresh if table exists and is empty or needs updating
+                const table = document.getElementById('testimonialsTable');
+                if (table && table.querySelector('tbody').children.length === 0) {
+                    refreshTestimonials();
+                }
             }
         }
         
@@ -1317,9 +1325,54 @@ if ($isLoggedIn) {
             if (document.getElementById('contactsTable')) {
                 const table = document.getElementById('contactsTable');
                 table.classList.add('loading');
-                setTimeout(() => location.reload(), 500);
-            } else {
-                location.reload();
+                
+                // Load contacts data via API without page reload
+                fetch('api/admin-crud.php?action=get_contacts')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = table.querySelector('tbody');
+                            tbody.innerHTML = '';
+                            
+                            data.data.forEach(contact => {
+                                const statusBadge = contact.is_read ? 
+                                    '<span class="badge bg-info">Read</span>' : 
+                                    '<span class="badge bg-warning">New</span>';
+                                
+                                const markReadBtn = !contact.is_read ? 
+                                    `<button class="btn btn-success btn-sm me-1" onclick="markAsRead(${contact.id})" title="Mark as Read">
+                                        <i class="fas fa-check"></i>
+                                    </button>` : '';
+                                
+                                tbody.innerHTML += `
+                                    <tr data-id="${contact.id}">
+                                        <td>${contact.id}</td>
+                                        <td>${contact.name}</td>
+                                        <td>${contact.email}</td>
+                                        <td>${contact.subject}</td>
+                                        <td>${statusBadge}</td>
+                                        <td>${new Date(contact.created_at).toLocaleDateString()}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                ${markReadBtn}
+                                                <button class="btn btn-primary btn-sm me-1" onclick="viewContact(${contact.id})" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-danger btn-sm" onclick="deleteContact(${contact.id})" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                        }
+                        table.classList.remove('loading');
+                    })
+                    .catch(error => {
+                        console.error('Error refreshing contacts:', error);
+                        table.classList.remove('loading');
+                    });
             }
         }
         
@@ -1327,15 +1380,88 @@ if ($isLoggedIn) {
             if (document.getElementById('testimonialsTable')) {
                 const table = document.getElementById('testimonialsTable');
                 table.classList.add('loading');
-                setTimeout(() => location.reload(), 500);
-            } else {
-                location.reload();
+                
+                // Load testimonials data via API without page reload
+                fetch('api/admin-crud.php?action=get_testimonials')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = table.querySelector('tbody');
+                            tbody.innerHTML = '';
+                            
+                            data.data.forEach(testimonial => {
+                                const statusBadge = testimonial.is_active ? 
+                                    '<span class="badge bg-success">Active</span>' : 
+                                    '<span class="badge bg-secondary">Inactive</span>';
+                                
+                                const featuredBadge = testimonial.is_featured ? 
+                                    '<span class="badge bg-warning ms-1">Featured</span>' : '';
+                                
+                                const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
+                                
+                                tbody.innerHTML += `
+                                    <tr data-id="${testimonial.id}">
+                                        <td>${testimonial.id}</td>
+                                        <td>${testimonial.name}</td>
+                                        <td>${testimonial.company || 'N/A'}</td>
+                                        <td>${testimonial.position || 'N/A'}</td>
+                                        <td class="text-warning">${stars}</td>
+                                        <td>${statusBadge}${featuredBadge}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-primary btn-sm me-1" onclick="viewTestimonial(${testimonial.id})" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-warning btn-sm me-1" onclick="editTestimonial(${testimonial.id})" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger btn-sm" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                        }
+                        table.classList.remove('loading');
+                    })
+                    .catch(error => {
+                        console.error('Error refreshing testimonials:', error);
+                        table.classList.remove('loading');
+                    });
             }
         }
         
         function updateDashboardStats() {
-            // This would ideally be an AJAX call to get updated stats
-            setTimeout(() => location.reload(), 1000);
+            // Update dashboard statistics via API without page reload
+            fetch('api/admin-crud.php?action=get_stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update stat numbers if elements exist
+                        const totalContactsEl = document.querySelector('#totalContacts .stat-number');
+                        const newContactsEl = document.querySelector('#newContacts .stat-number');
+                        const totalTestimonialsEl = document.querySelector('#totalTestimonials .stat-number');
+                        const activeTestimonialsEl = document.querySelector('#activeTestimonials .stat-number');
+                        
+                        if (totalContactsEl) totalContactsEl.textContent = data.data.total_contacts || 0;
+                        if (newContactsEl) newContactsEl.textContent = data.data.new_contacts || 0;
+                        if (totalTestimonialsEl) totalTestimonialsEl.textContent = data.data.total_testimonials || 0;
+                        if (activeTestimonialsEl) activeTestimonialsEl.textContent = data.data.active_testimonials || 0;
+                        
+                        // Update sidebar badge for new contacts
+                        const contactsBadge = document.querySelector('.admin-nav-link[data-tab="contacts"] .badge');
+                        if (contactsBadge && data.data.new_contacts > 0) {
+                            contactsBadge.textContent = data.data.new_contacts;
+                        } else if (contactsBadge && data.data.new_contacts === 0) {
+                            contactsBadge.remove();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating dashboard stats:', error);
+                });
         }
         
         // Notification system
