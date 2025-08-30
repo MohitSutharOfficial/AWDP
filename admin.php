@@ -410,9 +410,67 @@ if ($isLoggedIn) {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Global Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+        }
+        
+        .loading-spinner .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border-width: 4px;
+        }
+        
+        /* Button loading states */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            margin: auto;
+            border: 2px solid transparent;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+        }
     </style>
 </head>
 <body>
+    <!-- Global Loading Overlay -->
+    <div id="globalLoading" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-3 text-primary fw-bold">Processing...</div>
+        </div>
+    </div>
+    
     <?php if (!$isLoggedIn): ?>
         <!-- Login Form -->
         <div class="login-container">
@@ -673,11 +731,11 @@ if ($isLoggedIn) {
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                     <?php if ($contact['status'] === 'new'): ?>
-                                                        <button class="btn btn-success" onclick="markAsRead(<?php echo $contact['id']; ?>)" title="Mark as Read">
+                                                        <button id="mark-read-<?php echo $contact['id']; ?>" class="btn btn-success" onclick="markAsRead(<?php echo $contact['id']; ?>)" title="Mark as Read">
                                                             <i class="fas fa-check"></i>
                                                         </button>
                                                     <?php endif; ?>
-                                                    <button class="btn btn-danger" onclick="deleteContact(<?php echo $contact['id']; ?>)" title="Delete">
+                                                    <button id="delete-contact-<?php echo $contact['id']; ?>" class="btn btn-danger" onclick="deleteContact(<?php echo $contact['id']; ?>)" title="Delete">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
@@ -769,7 +827,7 @@ if ($isLoggedIn) {
                                                     <button class="btn btn-primary" onclick="editTestimonial(<?php echo $testimonial['id']; ?>)" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button class="btn btn-danger" onclick="deleteTestimonial(<?php echo $testimonial['id']; ?>)" title="Delete">
+                                                    <button id="delete-testimonial-<?php echo $testimonial['id']; ?>" class="btn btn-danger" onclick="deleteTestimonial(<?php echo $testimonial['id']; ?>)" title="Delete">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
@@ -1053,7 +1111,7 @@ if ($isLoggedIn) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Add Testimonial</button>
+                        <button id="add-testimonial-submit" type="submit" class="btn btn-success">Add Testimonial</button>
                     </div>
                 </form>
             </div>
@@ -1112,7 +1170,7 @@ if ($isLoggedIn) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Testimonial</button>
+                        <button id="edit-testimonial-submit" type="submit" class="btn btn-primary">Update Testimonial</button>
                     </div>
                 </form>
             </div>
@@ -1253,10 +1311,18 @@ if ($isLoggedIn) {
         
         // Contact management functions
         function markAsRead(contactId) {
+            // Show loading state
+            showLoading();
+            setButtonLoading(`mark-read-${contactId}`, true);
+            
             makeAjaxRequest({
                 action: 'mark_contact_read',
                 contact_id: contactId
             }, function(result) {
+                // Hide loading state
+                hideLoading();
+                setButtonLoading(`mark-read-${contactId}`, false);
+                
                 if (result.success) {
                     const row = document.querySelector(`#contactsTable tr[data-id="${contactId}"]`);
                     if (row) {
@@ -1268,25 +1334,41 @@ if ($isLoggedIn) {
                         if (actionBtn) actionBtn.remove();
                     }
                     updateDashboardStats();
+                    showNotification('Contact marked as read', 'success');
+                } else {
+                    showNotification('Error marking contact as read', 'error');
                 }
             });
         }
         
         function deleteContact(contactId) {
             if (confirm('Are you sure you want to delete this contact?')) {
+                showLoading('Deleting contact...');
+                
                 makeAjaxRequest({
                     action: 'delete_contact',
                     contact_id: contactId
                 }, function(result) {
+                    hideLoading();
                     if (result.success) {
+                        showNotification('Contact deleted successfully', 'success');
                         const row = document.querySelector(`#contactsTable tr[data-id="${contactId}"]`);
                         if (row) {
                             row.style.transition = 'opacity 0.3s';
                             row.style.opacity = '0';
-                            setTimeout(() => row.remove(), 300);
+                            setTimeout(() => {
+                                row.remove();
+                                // Refresh the contacts list to update pagination
+                                loadContacts();
+                            }, 300);
                         }
                         updateDashboardStats();
+                    } else {
+                        showNotification(result.message || 'Error deleting contact', 'error');
                     }
+                }, function(error) {
+                    hideLoading();
+                    showNotification('Error deleting contact', 'error');
                 });
             }
         }
@@ -1299,18 +1381,23 @@ if ($isLoggedIn) {
             }
             
             if (confirm(`Mark all ${newContacts.length} new contacts as read?`)) {
+                showLoading('Marking all contacts as read...');
+                
                 makeAjaxRequest('/api/admin-crud.php?action=mark_all_contacts_read', {
                     method: 'POST'
                 })
                 .then(data => {
+                    hideLoading();
                     if (data.success) {
                         showNotification(data.message, 'success');
                         loadContacts(); // Refresh the contacts list
+                        updateDashboardStats();
                     } else {
                         showNotification(data.message || 'Failed to mark all contacts as read', 'error');
                     }
                 })
                 .catch(error => {
+                    hideLoading();
                     console.error('Error marking all as read:', error);
                     showNotification('Error marking all contacts as read', 'error');
                 });
@@ -1440,7 +1527,7 @@ if ($isLoggedIn) {
                                     '<span class="badge bg-warning">New</span>';
                                 
                                 const markReadBtn = contact.status !== 'read' ? 
-                                    `<button class="btn btn-success btn-sm me-1" onclick="markAsRead(${contact.id})" title="Mark as Read">
+                                    `<button id="mark-read-${contact.id}" class="btn btn-success btn-sm me-1" onclick="markAsRead(${contact.id})" title="Mark as Read">
                                         <i class="fas fa-check"></i>
                                     </button>` : '';
                                 
@@ -1458,7 +1545,7 @@ if ($isLoggedIn) {
                                                 <button class="btn btn-primary btn-sm me-1" onclick="viewContact(${contact.id})" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button class="btn btn-danger btn-sm" onclick="deleteContact(${contact.id})" title="Delete">
+                                                <button id="delete-contact-${contact.id}" class="btn btn-danger btn-sm" onclick="deleteContact(${contact.id})" title="Delete">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -1515,7 +1602,7 @@ if ($isLoggedIn) {
                                                 <button class="btn btn-warning btn-sm me-1" onclick="editTestimonial(${testimonial.id})" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn btn-danger btn-sm" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
+                                                <button id="delete-testimonial-${testimonial.id}" class="btn btn-danger btn-sm" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -1584,6 +1671,36 @@ if ($isLoggedIn) {
                     notification.remove();
                 }
             }, 5000);
+        }
+        
+        // Loading system
+        function showLoading(message = 'Processing...') {
+            const loadingOverlay = document.getElementById('globalLoading');
+            const loadingText = loadingOverlay.querySelector('.mt-3');
+            loadingText.textContent = message;
+            loadingOverlay.style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            const loadingOverlay = document.getElementById('globalLoading');
+            loadingOverlay.style.display = 'none';
+        }
+        
+        function setButtonLoading(button, loading = true) {
+            if (loading) {
+                button.disabled = true;
+                button.classList.add('btn-loading');
+                button.setAttribute('data-original-text', button.textContent);
+                button.textContent = 'Processing...';
+            } else {
+                button.disabled = false;
+                button.classList.remove('btn-loading');
+                const originalText = button.getAttribute('data-original-text');
+                if (originalText) {
+                    button.textContent = originalText;
+                    button.removeAttribute('data-original-text');
+                }
+            }
         }
         
         function showNotifications() {
@@ -1718,6 +1835,10 @@ if ($isLoggedIn) {
         
         function deleteTestimonial(testimonialId) {
             if (confirm('Are you sure you want to delete this testimonial?')) {
+                // Show loading state
+                showLoading();
+                setButtonLoading(`delete-testimonial-${testimonialId}`, true);
+                
                 fetch('/api/admin-crud.php', {
                     method: 'POST',
                     headers: {
@@ -1727,8 +1848,13 @@ if ($isLoggedIn) {
                 })
                 .then(response => response.json())
                 .then(data => {
+                    // Hide loading state
+                    hideLoading();
+                    setButtonLoading(`delete-testimonial-${testimonialId}`, false);
+                    
                     if (data.success) {
                         showNotification('Testimonial deleted successfully', 'success');
+                        // Auto-refresh testimonials data
                         refreshTestimonials();
                         updateDashboardStats();
                     } else {
@@ -1737,6 +1863,8 @@ if ($isLoggedIn) {
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    hideLoading();
+                    setButtonLoading(`delete-testimonial-${testimonialId}`, false);
                     showNotification('Error deleting testimonial', 'error');
                 });
             }
@@ -1746,6 +1874,12 @@ if ($isLoggedIn) {
             const form = document.getElementById('addTestimonialForm');
             const formData = new FormData(form);
             formData.append('action', 'add_testimonial');
+            
+            // Show loading state
+            showLoading();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            setButtonLoading('add-testimonial-submit', true);
+            if (submitBtn) submitBtn.disabled = true;
             
             // Convert FormData to URLSearchParams
             const params = new URLSearchParams();
@@ -1762,6 +1896,11 @@ if ($isLoggedIn) {
             })
             .then(response => response.json())
             .then(data => {
+                // Hide loading state
+                hideLoading();
+                setButtonLoading('add-testimonial-submit', false);
+                if (submitBtn) submitBtn.disabled = false;
+                
                 if (data.success) {
                     showNotification('Testimonial added successfully', 'success');
                     form.reset();
@@ -1770,6 +1909,7 @@ if ($isLoggedIn) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('addTestimonialModal'));
                     modal.hide();
                     
+                    // Auto-refresh testimonials data
                     refreshTestimonials();
                     updateDashboardStats();
                 } else {
@@ -1778,6 +1918,9 @@ if ($isLoggedIn) {
             })
             .catch(error => {
                 console.error('Error:', error);
+                hideLoading();
+                setButtonLoading('add-testimonial-submit', false);
+                if (submitBtn) submitBtn.disabled = false;
                 showNotification('Error adding testimonial', 'error');
             });
         }
@@ -1786,6 +1929,12 @@ if ($isLoggedIn) {
             const form = document.getElementById('editTestimonialForm');
             const formData = new FormData(form);
             formData.append('action', 'update_testimonial');
+            
+            // Show loading state
+            showLoading();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            setButtonLoading('edit-testimonial-submit', true);
+            if (submitBtn) submitBtn.disabled = true;
             
             // Change 'id' to 'testimonial_id' for API compatibility
             const id = formData.get('id');
@@ -1807,6 +1956,11 @@ if ($isLoggedIn) {
             })
             .then(response => response.json())
             .then(data => {
+                // Hide loading state
+                hideLoading();
+                setButtonLoading('edit-testimonial-submit', false);
+                if (submitBtn) submitBtn.disabled = false;
+                
                 if (data.success) {
                     showNotification('Testimonial updated successfully', 'success');
                     
@@ -1814,6 +1968,7 @@ if ($isLoggedIn) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editTestimonialModal'));
                     modal.hide();
                     
+                    // Auto-refresh testimonials data
                     refreshTestimonials();
                     updateDashboardStats();
                 } else {
@@ -1822,6 +1977,9 @@ if ($isLoggedIn) {
             })
             .catch(error => {
                 console.error('Error:', error);
+                hideLoading();
+                setButtonLoading('edit-testimonial-submit', false);
+                if (submitBtn) submitBtn.disabled = false;
                 showNotification('Error updating testimonial', 'error');
             });
         }
