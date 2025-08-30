@@ -55,14 +55,21 @@ class Database {
                 $username = $dbParts['user'];
                 $password = $dbParts['pass'];
             } else {
-                // Fallback to Supabase or environment variables
-                $host = $_ENV['SUPABASE_HOST'] ?? getenv('SUPABASE_HOST') ?? 'db.brdavdukxvilpdzgbsqd.supabase.co';
-                $port = $_ENV['SUPABASE_PORT'] ?? getenv('SUPABASE_PORT') ?? '5432';
-                $database = $_ENV['SUPABASE_DATABASE'] ?? getenv('SUPABASE_DATABASE') ?? 'postgres';
-                $username = $_ENV['SUPABASE_USERNAME'] ?? getenv('SUPABASE_USERNAME') ?? 'postgres';
-                $password = $_ENV['SUPABASE_PASSWORD'] ?? getenv('SUPABASE_PASSWORD') ?? 'rsMwRvhAs3qxIWQ8';
+                // Try SQLite as fallback for Railway
+                $sqliteFile = __DIR__ . '/../data/database.sqlite';
+                $dataDir = dirname($sqliteFile);
                 
-                $dsn = "pgsql:host={$host};port={$port};dbname={$database};sslmode=require";
+                // Create data directory if it doesn't exist
+                if (!file_exists($dataDir)) {
+                    mkdir($dataDir, 0755, true);
+                }
+                
+                $dsn = "sqlite:" . $sqliteFile;
+                $username = null;
+                $password = null;
+                
+                // Log that we're using SQLite fallback
+                error_log("Using SQLite fallback database at: " . $sqliteFile);
             }
             
             $options = [
@@ -72,6 +79,13 @@ class Database {
             ];
             
             $this->connection = new PDO($dsn, $username, $password, $options);
+            
+            // For SQLite, enable foreign keys and set timeout
+            if (strpos($dsn, 'sqlite:') === 0) {
+                $this->connection->exec('PRAGMA foreign_keys = ON');
+                $this->connection->exec('PRAGMA busy_timeout = 30000');
+            }
+            
         } catch (PDOException $e) {
             // More detailed error logging for Railway
             error_log("Database connection failed: " . $e->getMessage());
@@ -112,35 +126,70 @@ class Database {
     }
     
     public function createTables() {
-        $tables = [
-            // Contacts table
-            "CREATE TABLE IF NOT EXISTS contacts (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255) NOT NULL,
-                phone VARCHAR(20),
-                company VARCHAR(255),
-                subject VARCHAR(255),
-                message TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                status VARCHAR(20) DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied'))
-            )",
-            
-            // Testimonials table
-            "CREATE TABLE IF NOT EXISTS testimonials (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                company VARCHAR(255),
-                position VARCHAR(255),
-                testimonial TEXT NOT NULL,
-                rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
-                image_url VARCHAR(500),
-                is_featured BOOLEAN DEFAULT FALSE,
-                is_active BOOLEAN DEFAULT TRUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )"
-        ];
+        // Check if we're using SQLite or PostgreSQL
+        $driver = $this->connection->getAttribute(PDO::ATTR_DRIVER_NAME);
+        
+        if ($driver === 'sqlite') {
+            $tables = [
+                // Contacts table (SQLite)
+                "CREATE TABLE IF NOT EXISTS contacts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    phone VARCHAR(20),
+                    company VARCHAR(255),
+                    subject VARCHAR(255),
+                    message TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    status VARCHAR(20) DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied'))
+                )",
+                
+                // Testimonials table (SQLite)
+                "CREATE TABLE IF NOT EXISTS testimonials (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name VARCHAR(255) NOT NULL,
+                    company VARCHAR(255),
+                    position VARCHAR(255),
+                    testimonial TEXT NOT NULL,
+                    rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+                    image_url VARCHAR(500),
+                    is_featured BOOLEAN DEFAULT 0,
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )"
+            ];
+        } else {
+            $tables = [
+                // Contacts table (PostgreSQL)
+                "CREATE TABLE IF NOT EXISTS contacts (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    phone VARCHAR(20),
+                    company VARCHAR(255),
+                    subject VARCHAR(255),
+                    message TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status VARCHAR(20) DEFAULT 'new' CHECK (status IN ('new', 'read', 'replied'))
+                )",
+                
+                // Testimonials table (PostgreSQL)
+                "CREATE TABLE IF NOT EXISTS testimonials (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    company VARCHAR(255),
+                    position VARCHAR(255),
+                    testimonial TEXT NOT NULL,
+                    rating INTEGER DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+                    image_url VARCHAR(500),
+                    is_featured BOOLEAN DEFAULT FALSE,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )"
+            ];
+        }
         
         foreach ($tables as $sql) {
             try {
@@ -162,7 +211,7 @@ class Database {
                 'position' => 'CEO',
                 'testimonial' => 'TechCorp Solutions transformed our business with their innovative web platform. The team\'s expertise and dedication exceeded our expectations.',
                 'rating' => 5,
-                'is_featured' => true
+                'is_featured' => 1
             ],
             [
                 'name' => 'Michael Chen',
@@ -170,7 +219,7 @@ class Database {
                 'position' => 'CTO',
                 'testimonial' => 'Outstanding mobile app development. They delivered a high-quality solution on time and within budget.',
                 'rating' => 5,
-                'is_featured' => true
+                'is_featured' => 1
             ],
             [
                 'name' => 'Emily Rodriguez',
@@ -178,15 +227,21 @@ class Database {
                 'position' => 'Product Manager',
                 'testimonial' => 'The cloud migration services were seamless. Our infrastructure is now more scalable and secure than ever.',
                 'rating' => 5,
-                'is_featured' => false
+                'is_featured' => 0
             ]
         ];
         
         foreach ($testimonials as $testimonial) {
             try {
-                $this->insert('testimonials', $testimonial);
+                // Check if testimonial already exists
+                $existing = $this->fetchOne("SELECT id FROM testimonials WHERE name = ? AND company = ?", 
+                                           [$testimonial['name'], $testimonial['company']]);
+                if (!$existing) {
+                    $this->insert('testimonials', $testimonial);
+                }
             } catch (Exception $e) {
-                // Testimonial might already exist, skip
+                // Testimonial might already exist or table might not be ready, skip
+                error_log("Failed to insert sample testimonial: " . $e->getMessage());
             }
         }
     }
