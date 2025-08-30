@@ -1208,9 +1208,9 @@ if ($isLoggedIn) {
         
         // AJAX helper function
         function makeAjaxRequest(data, callback) {
-            console.log('Making API request to:', 'api/admin-crud.php', 'with data:', data);
+            console.log('Making API request to:', '/api/admin-crud.php', 'with data:', data);
             
-            fetch('api/admin-crud.php', {
+            fetch('/api/admin-crud.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -1417,7 +1417,7 @@ if ($isLoggedIn) {
                 table.classList.add('loading');
                 
                 // Load contacts data via API without page reload
-                fetch('api/admin-crud.php?action=get_contacts')
+                fetch('/api/admin-crud.php?action=get_contacts')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -1472,7 +1472,7 @@ if ($isLoggedIn) {
                 table.classList.add('loading');
                 
                 // Load testimonials data via API without page reload
-                fetch('api/admin-crud.php?action=get_testimonials')
+                fetch('/api/admin-crud.php?action=get_testimonials')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -1525,7 +1525,7 @@ if ($isLoggedIn) {
         
         function updateDashboardStats() {
             // Update dashboard statistics via API without page reload
-            fetch('api/admin-crud.php?action=get_stats')
+            fetch('/api/admin-crud.php?action=get_stats')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1592,7 +1592,7 @@ if ($isLoggedIn) {
         
         // Contact and Testimonial Management Functions
         function viewContact(contactId) {
-            fetch(`api/admin-crud.php?action=get_contact&id=${contactId}`)
+            fetch(`/api/admin-crud.php?action=get_contact&id=${contactId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -1636,7 +1636,7 @@ if ($isLoggedIn) {
         }
         
         function viewTestimonial(testimonialId) {
-            fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+            fetch(`/api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -1677,7 +1677,7 @@ if ($isLoggedIn) {
         }
         
         function editTestimonial(testimonialId) {
-            fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+            fetch(`/api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -1708,7 +1708,7 @@ if ($isLoggedIn) {
         
         function deleteTestimonial(testimonialId) {
             if (confirm('Are you sure you want to delete this testimonial?')) {
-                fetch('api/admin-crud.php', {
+                fetch('/api/admin-crud.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
@@ -1743,7 +1743,7 @@ if ($isLoggedIn) {
                 params.append(key, value);
             }
             
-            fetch('api/admin-crud.php', {
+            fetch('/api/admin-crud.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -1788,7 +1788,7 @@ if ($isLoggedIn) {
                 params.append(key, value);
             }
             
-            fetch('api/admin-crud.php', {
+            fetch('/api/admin-crud.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
