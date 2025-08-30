@@ -5,15 +5,7 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes        case 'delete_testimonial':
-            $testimonialId = intval($_POST['testimonial_id'] ?? $_POST['id'] ?? 0);
-            if ($testimonialId > 0) {
-                $db->execute("DELETE FROM testimonials WHERE id = ?", [$testimonialId]);
-                $response = ['success' => true, 'message' => 'Testimonial deleted successfully'];
-            } else {
-                $response['message'] = 'Invalid testimonial ID';
-            }
-            break;on.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 // Start session
 if (session_status() == PHP_SESSION_NONE) {
@@ -124,7 +116,7 @@ try {
             break;
             
         case 'delete_contact':
-            $contactId = intval($_POST['contact_id'] ?? 0);
+            $contactId = intval($_POST['contact_id'] ?? $_POST['id'] ?? 0);
             if ($contactId > 0) {
                 $db->execute("DELETE FROM contacts WHERE id = ?", [$contactId]);
                 $response = ['success' => true, 'message' => 'Contact deleted successfully'];
@@ -133,8 +125,18 @@ try {
             }
             break;
             
+        case 'mark_contact_read':
+            $contactId = intval($_POST['contact_id'] ?? $_POST['id'] ?? 0);
+            if ($contactId > 0) {
+                $db->execute("UPDATE contacts SET is_read = true WHERE id = ?", [$contactId]);
+                $response = ['success' => true, 'message' => 'Contact marked as read'];
+            } else {
+                $response['message'] = 'Invalid contact ID';
+            }
+            break;
+            
         case 'mark_all_contacts_read':
-            $db->execute("UPDATE contacts SET status = 'read' WHERE status = 'new'");
+            $db->execute("UPDATE contacts SET is_read = true WHERE is_read = false");
             $response = ['success' => true, 'message' => 'All contacts marked as read'];
             break;
             
@@ -309,7 +311,7 @@ try {
             break;
             
         case 'delete_testimonial':
-            $testimonialId = intval($_POST['testimonial_id'] ?? 0);
+            $testimonialId = intval($_POST['testimonial_id'] ?? $_POST['id'] ?? 0);
             if ($testimonialId > 0) {
                 $db->execute("DELETE FROM testimonials WHERE id = ?", [$testimonialId]);
                 $response = ['success' => true, 'message' => 'Testimonial deleted successfully'];
