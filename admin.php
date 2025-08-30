@@ -1343,31 +1343,37 @@ if ($isLoggedIn) {
         
         function deleteContact(contactId) {
             if (confirm('Are you sure you want to delete this contact?')) {
-                showLoading('Deleting contact...');
+                // Show loading state
+                showLoading();
+                setButtonLoading(`delete-contact-${contactId}`, true);
+                
+                // Set a timeout to ensure loading state clears even if request hangs
+                const loadingTimeout = setTimeout(() => {
+                    hideLoading();
+                    setButtonLoading(`delete-contact-${contactId}`, false);
+                    showNotification('Request timeout. Please try again.', 'error');
+                }, 30000); // 30 second timeout
                 
                 makeAjaxRequest({
                     action: 'delete_contact',
                     contact_id: contactId
                 }, function(result) {
+                    clearTimeout(loadingTimeout);
                     hideLoading();
+                    setButtonLoading(`delete-contact-${contactId}`, false);
+                    
                     if (result.success) {
                         showNotification('Contact deleted successfully', 'success');
-                        const row = document.querySelector(`#contactsTable tr[data-id="${contactId}"]`);
-                        if (row) {
-                            row.style.transition = 'opacity 0.3s';
-                            row.style.opacity = '0';
-                            setTimeout(() => {
-                                row.remove();
-                                // Refresh the contacts list to update pagination
-                                loadContacts();
-                            }, 300);
-                        }
+                        // Auto-refresh contacts data
+                        refreshContacts();
                         updateDashboardStats();
                     } else {
                         showNotification(result.message || 'Error deleting contact', 'error');
                     }
                 }, function(error) {
+                    clearTimeout(loadingTimeout);
                     hideLoading();
+                    setButtonLoading(`delete-contact-${contactId}`, false);
                     showNotification('Error deleting contact', 'error');
                 });
             }
@@ -1519,7 +1525,11 @@ if ($isLoggedIn) {
                     .then(data => {
                         if (data.success) {
                             const tbody = table.querySelector('tbody');
+                            // Clear the table completely first
                             tbody.innerHTML = '';
+                            
+                            // Build all rows at once to prevent layout shifts
+                            let tableRows = '';
                             
                             data.data.forEach(contact => {
                                 const statusBadge = contact.status === 'read' ? 
@@ -1531,7 +1541,7 @@ if ($isLoggedIn) {
                                         <i class="fas fa-check"></i>
                                     </button>` : '';
                                 
-                                tbody.innerHTML += `
+                                tableRows += `
                                     <tr data-id="${contact.id}">
                                         <td>${contact.id}</td>
                                         <td>${contact.name}</td>
@@ -1553,6 +1563,9 @@ if ($isLoggedIn) {
                                     </tr>
                                 `;
                             });
+                            
+                            // Set all rows at once to prevent UI jumps
+                            tbody.innerHTML = tableRows;
                         }
                         table.classList.remove('loading');
                     })
@@ -1574,7 +1587,11 @@ if ($isLoggedIn) {
                     .then(data => {
                         if (data.success) {
                             const tbody = table.querySelector('tbody');
+                            // Clear the table completely first
                             tbody.innerHTML = '';
+                            
+                            // Build all rows at once to prevent layout shifts
+                            let tableRows = '';
                             
                             data.data.forEach(testimonial => {
                                 const statusBadge = testimonial.is_active ? 
@@ -1586,7 +1603,7 @@ if ($isLoggedIn) {
                                 
                                 const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
                                 
-                                tbody.innerHTML += `
+                                tableRows += `
                                     <tr data-id="${testimonial.id}">
                                         <td>${testimonial.id}</td>
                                         <td>${testimonial.name}</td>
@@ -1610,6 +1627,9 @@ if ($isLoggedIn) {
                                     </tr>
                                 `;
                             });
+                            
+                            // Set all rows at once to prevent UI jumps
+                            tbody.innerHTML = tableRows;
                         }
                         table.classList.remove('loading');
                     })
@@ -1839,6 +1859,13 @@ if ($isLoggedIn) {
                 showLoading();
                 setButtonLoading(`delete-testimonial-${testimonialId}`, true);
                 
+                // Set a timeout to ensure loading state clears even if request hangs
+                const loadingTimeout = setTimeout(() => {
+                    hideLoading();
+                    setButtonLoading(`delete-testimonial-${testimonialId}`, false);
+                    showNotification('Request timeout. Please try again.', 'error');
+                }, 30000); // 30 second timeout
+                
                 fetch('/api/admin-crud.php', {
                     method: 'POST',
                     headers: {
@@ -1846,7 +1873,15 @@ if ($isLoggedIn) {
                     },
                     body: `action=delete_testimonial&testimonial_id=${testimonialId}`
                 })
-                .then(response => response.json())
+                .then(response => {
+                    clearTimeout(loadingTimeout);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    return response.json();
+                })
                 .then(data => {
                     // Hide loading state
                     hideLoading();
@@ -1862,10 +1897,11 @@ if ($isLoggedIn) {
                     }
                 })
                 .catch(error => {
+                    clearTimeout(loadingTimeout);
                     console.error('Error:', error);
                     hideLoading();
                     setButtonLoading(`delete-testimonial-${testimonialId}`, false);
-                    showNotification('Error deleting testimonial', 'error');
+                    showNotification('Error deleting testimonial: ' + error.message, 'error');
                 });
             }
         }

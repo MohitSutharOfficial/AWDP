@@ -645,8 +645,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Phone validation
             if (field.type === 'tel' && value) {
-                const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-                if (!phoneRegex.test(value.replace(/[\s\-\(\)]/g, ''))) {
+                // More flexible phone regex that allows numbers starting with 0
+                const phoneRegex = /^[\+]?[0-9][\d\s\-\(\)]{8,15}$/;
+                if (!phoneRegex.test(value)) {
                     isValid = false;
                     message = 'Please enter a valid phone number.';
                 }
