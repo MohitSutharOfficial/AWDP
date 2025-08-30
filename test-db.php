@@ -7,12 +7,12 @@ require_once __DIR__ . '/config/database.php';
 
 echo "<h1>Database Connection Test</h1>";
 
-// Test 1: Check if we can connect to Supabase Session Pooler
-echo "<h2>Supabase Session Pooler Connection Test</h2>";
+// Test 1: Check if we can connect to Supabase Transaction Pooler
+echo "<h2>Supabase Transaction Pooler Connection Test</h2>";
 try {
-    // Using Session Pooler (IPv4 compatible)
-    $dsn = "pgsql:host=db.brdavdukxvilpdzgbsqd.supabase.co;port=6543;dbname=postgres;sslmode=require";
-    $username = 'postgres.brdavdukxvilpdzgbsqd'; // Session pooler username format
+    // Using Transaction Pooler (IPv4 compatible)
+    $dsn = "pgsql:host=aws-1-ap-south-1.pooler.supabase.com;port=6543;dbname=postgres;sslmode=require";
+    $username = 'postgres.brdavdukxvilpdzgbsqd'; // Transaction pooler username format
     $password = '1f73m7bxpj1i6iaQ'; // New password
     
     $pdo = new PDO($dsn, $username, $password, [
@@ -20,7 +20,7 @@ try {
         PDO::ATTR_TIMEOUT => 30
     ]);
     
-    echo "<p style='color: green;'>✅ Supabase Session Pooler connection successful!</p>";
+    echo "<p style='color: green;'>✅ Supabase Transaction Pooler connection successful!</p>";
     
     // Test query
     $stmt = $pdo->query("SELECT version()");
@@ -33,7 +33,7 @@ try {
     
     // Insert test data
     $stmt = $pdo->prepare("INSERT INTO connection_test (test_message) VALUES (?)");
-    $stmt->execute(['Session Pooler Test - ' . date('Y-m-d H:i:s')]);
+    $stmt->execute(['Transaction Pooler Test - ' . date('Y-m-d H:i:s')]);
     echo "<p style='color: green;'>✅ Data insertion test successful!</p>";
     
     // Count records
@@ -46,7 +46,25 @@ try {
     echo "<p style='color: green;'>✅ Table cleanup successful!</p>";
     
 } catch (Exception $e) {
-    echo "<p style='color: red;'>❌ Supabase Session Pooler connection failed: " . htmlspecialchars($e->getMessage()) . "</p>";
+    echo "<p style='color: red;'>❌ Supabase Transaction Pooler connection failed: " . htmlspecialchars($e->getMessage()) . "</p>";
+    
+    // Test Session Pooler for comparison
+    echo "<h3>Session Pooler Test (for comparison)</h3>";
+    try {
+        $dsn = "pgsql:host=aws-1-ap-south-1.pooler.supabase.com;port=5432;dbname=postgres;sslmode=require";
+        $username = 'postgres.brdavdukxvilpdzgbsqd';
+        $password = '1f73m7bxpj1i6iaQ';
+        
+        $pdo = new PDO($dsn, $username, $password, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 10
+        ]);
+        
+        echo "<p style='color: green;'>✅ Session pooler worked</p>";
+        
+    } catch (Exception $e2) {
+        echo "<p style='color: red;'>❌ Session pooler also failed: " . htmlspecialchars($e2->getMessage()) . "</p>";
+    }
     
     // Test direct connection for comparison
     echo "<h3>Direct Connection Test (for comparison)</h3>";

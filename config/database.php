@@ -55,17 +55,17 @@ class Database {
                 $username = $dbParts['user'];
                 $password = $dbParts['pass'];
             } else {
-                // Fallback to Supabase Session Pooler (IPv4 compatible)
-                $host = $_ENV['SUPABASE_HOST'] ?? getenv('SUPABASE_HOST') ?? 'db.brdavdukxvilpdzgbsqd.supabase.co';
-                $port = $_ENV['SUPABASE_PORT'] ?? getenv('SUPABASE_PORT') ?? '6543'; // Session pooler port
+                // Fallback to Supabase Transaction Pooler (IPv4 compatible)
+                $host = $_ENV['SUPABASE_HOST'] ?? getenv('SUPABASE_HOST') ?? 'aws-1-ap-south-1.pooler.supabase.com';
+                $port = $_ENV['SUPABASE_PORT'] ?? getenv('SUPABASE_PORT') ?? '6543'; // Transaction pooler port
                 $database = $_ENV['SUPABASE_DATABASE'] ?? getenv('SUPABASE_DATABASE') ?? 'postgres';
-                $username = $_ENV['SUPABASE_USERNAME'] ?? getenv('SUPABASE_USERNAME') ?? 'postgres.brdavdukxvilpdzgbsqd'; // Session pooler username
+                $username = $_ENV['SUPABASE_USERNAME'] ?? getenv('SUPABASE_USERNAME') ?? 'postgres.brdavdukxvilpdzgbsqd'; // Transaction pooler username
                 $password = $_ENV['SUPABASE_PASSWORD'] ?? getenv('SUPABASE_PASSWORD') ?? '1f73m7bxpj1i6iaQ';
                 
                 $dsn = "pgsql:host={$host};port={$port};dbname={$database};sslmode=require";
                 
-                // Log that we're using Supabase Session Pooler
-                error_log("Using Supabase Session Pooler at: {$host}:{$port}");
+                // Log that we're using Supabase Transaction Pooler
+                error_log("Using Supabase Transaction Pooler at: {$host}:{$port}");
             }
             
             $options = [
