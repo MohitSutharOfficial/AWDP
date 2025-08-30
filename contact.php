@@ -543,7 +543,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 const formData = new FormData(contactForm);
                 
-                const response = await fetch('contact.php', {
+                const response = await fetch(window.location.pathname, {
                     method: 'POST',
                     body: formData,
                     headers: {

@@ -1343,9 +1343,13 @@ if ($isLoggedIn) {
             }
         }
         
-        // AJAX helper function with error callback
+        // AJAX helper function with enhanced error handling and callbacks
         function makeAjaxRequest(data, successCallback, errorCallback) {
             console.log('Making API request to:', 'api/admin-crud.php', 'with data:', data);
+            
+            // Set timeout for request
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
             
             fetch('api/admin-crud.php', {
                 method: 'POST',
@@ -1353,9 +1357,11 @@ if ($isLoggedIn) {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: new URLSearchParams(data)
+                body: new URLSearchParams(data),
+                signal: controller.signal
             })
             .then(response => {
+                clearTimeout(timeoutId);
                 console.log('API response status:', response.status);
                 console.log('API response headers:', response.headers);
                 
@@ -1399,14 +1405,22 @@ if ($isLoggedIn) {
                     console.error('Response text that failed to parse:', text);
                     const errorMsg = 'Server returned invalid response: ' + text.substring(0, 100);
                     showNotification(errorMsg, 'error');
-                    if (errorCallback) errorCallback(errorMsg);
+                    if (errorCallback) errorCallback(new Error(errorMsg));
                 }
             })
             .catch(error => {
+                clearTimeout(timeoutId);
                 console.error('Fetch error:', error);
-                const errorMsg = 'Network error: ' + error.message;
+                
+                let errorMsg;
+                if (error.name === 'AbortError') {
+                    errorMsg = 'Request timeout - please try again';
+                } else {
+                    errorMsg = 'Network error: ' + error.message;
+                }
+                
                 showNotification(errorMsg, 'error');
-                if (errorCallback) errorCallback(errorMsg);
+                if (errorCallback) errorCallback(error);
             });
         }
         
@@ -1428,16 +1442,22 @@ if ($isLoggedIn) {
                     const row = document.querySelector(`#contactsTable tr[data-id="${contactId}"]`);
                     if (row) {
                         const statusBadge = row.querySelector('.badge');
-                        statusBadge.className = 'badge bg-info';
-                        statusBadge.textContent = 'Read';
+                        if (statusBadge) {
+                            statusBadge.textContent = 'Read';
+                            statusBadge.className = 'badge bg-info';
+                        }
                         
-                        const actionBtn = row.querySelector('.btn-success');
-                        if (actionBtn) actionBtn.remove();
+                        // Update the button
+                        const button = row.querySelector(`#mark-read-${contactId}`);
+                        if (button) {
+                            button.style.display = 'none';
+                        }
                     }
+                    
+                    // Invalidate cache and refresh data
+                    dataCache.contacts = null;
+                    refreshContacts(true);
                     updateDashboardStats();
-                    showNotification('Contact marked as read', 'success');
-                } else {
-                    showNotification('Error marking contact as read', 'error');
                 }
             }, function(error) {
                 // Error callback - always clear loading state
@@ -1470,8 +1490,9 @@ if ($isLoggedIn) {
                     
                     if (result.success) {
                         showNotification('Contact deleted successfully', 'success');
-                        // Auto-refresh contacts data
-                        refreshContacts();
+                        // Invalidate cache and refresh data
+                        dataCache.contacts = null;
+                        refreshContacts(true);
                         updateDashboardStats();
                     } else {
                         showNotification(result.message || 'Error deleting contact', 'error');
@@ -1626,131 +1647,224 @@ if ($isLoggedIn) {
                 });
         }
         
-        // Enhanced refresh functions with API calls
-        function refreshContacts() {
+        // Enhanced refresh functions with API calls and caching
+        function refreshContacts(forceRefresh = false) {
             if (document.getElementById('contactsTable')) {
                 const table = document.getElementById('contactsTable');
+                
+                // Use cache if available and valid
+                if (!forceRefresh && isCacheValid('contacts')) {
+                    console.log('Using cached contacts data');
+                    renderContactsTable(dataCache.contacts);
+                    return;
+                }
+                
                 table.classList.add('loading');
                 
                 // Load contacts data via API without page reload
                 fetch('api/admin-crud.php?action=get_contacts')
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
-                            const tbody = table.querySelector('tbody');
-                            // Clear the table completely first
-                            tbody.innerHTML = '';
-                            
-                            // Build all rows at once to prevent layout shifts
-                            let tableRows = '';
-                            
-                            data.data.forEach(contact => {
-                                const statusBadge = contact.status === 'read' ? 
-                                    '<span class="badge bg-info">Read</span>' : 
-                                    '<span class="badge bg-warning">New</span>';
-                                
-                                const markReadBtn = contact.status !== 'read' ? 
-                                    `<button id="mark-read-${contact.id}" class="btn btn-success btn-sm me-1" onclick="markAsRead(${contact.id})" title="Mark as Read">
-                                        <i class="fas fa-check"></i>
-                                    </button>` : '';
-                                
-                                tableRows += `
-                                    <tr data-id="${contact.id}">
-                                        <td>${contact.id}</td>
-                                        <td>${contact.name}</td>
-                                        <td>${contact.email}</td>
-                                        <td>${contact.subject}</td>
-                                        <td>${statusBadge}</td>
-                                        <td>${new Date(contact.created_at).toLocaleDateString()}</td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                ${markReadBtn}
-                                                <button class="btn btn-primary btn-sm me-1" onclick="viewContact(${contact.id})" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button id="delete-contact-${contact.id}" class="btn btn-danger btn-sm" onclick="deleteContact(${contact.id})" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `;
-                            });
-                            
-                            // Set all rows at once to prevent UI jumps
-                            tbody.innerHTML = tableRows;
+                            updateCache('contacts', data.data);
+                            renderContactsTable(data.data);
+                        } else {
+                            showNotification('Failed to load contacts: ' + (data.message || 'Unknown error'), 'error');
                         }
                         table.classList.remove('loading');
                     })
                     .catch(error => {
                         console.error('Error refreshing contacts:', error);
+                        showNotification('Error loading contacts: ' + error.message, 'error');
                         table.classList.remove('loading');
                     });
             }
         }
         
-        function refreshTestimonials() {
+        function renderContactsTable(contacts) {
+            const table = document.getElementById('contactsTable');
+            const tbody = table.querySelector('tbody');
+            
+            // Store current scroll position
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Build all rows at once to prevent layout shifts
+            let tableRows = '';
+            
+            contacts.forEach(contact => {
+                const statusBadge = contact.status === 'read' ? 
+                    '<span class="badge bg-info">Read</span>' : 
+                    '<span class="badge bg-warning">New</span>';
+                
+                const markReadBtn = contact.status !== 'read' ? 
+                    `<button id="mark-read-${contact.id}" class="btn btn-success btn-sm me-1" onclick="markAsRead(${contact.id})" title="Mark as Read">
+                        <i class="fas fa-check"></i>
+                    </button>` : '';
+                
+                tableRows += `
+                    <tr data-id="${contact.id}">
+                        <td>${contact.id}</td>
+                        <td>${contact.name}</td>
+                        <td>${contact.email}</td>
+                        <td>${contact.subject}</td>
+                        <td>${statusBadge}</td>
+                        <td>${new Date(contact.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                ${markReadBtn}
+                                <button class="btn btn-primary btn-sm me-1" onclick="viewContact(${contact.id})" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button id="delete-contact-${contact.id}" class="btn btn-danger btn-sm" onclick="deleteContact(${contact.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            // Set all rows at once to prevent UI jumps
+            tbody.innerHTML = tableRows;
+            
+            // Restore scroll position
+            window.scrollTo(0, scrollTop);
+        }
+        
+        // Enhanced data caching and state management
+        let dataCache = {
+            testimonials: null,
+            contacts: null,
+            lastUpdated: {
+                testimonials: null,
+                contacts: null
+            }
+        };
+        
+        const CACHE_DURATION = 30000; // 30 seconds
+        
+        function isCacheValid(type) {
+            return dataCache[type] && 
+                   dataCache.lastUpdated[type] && 
+                   (Date.now() - dataCache.lastUpdated[type]) < CACHE_DURATION;
+        }
+        
+        function updateCache(type, data) {
+            dataCache[type] = data;
+            dataCache.lastUpdated[type] = Date.now();
+            showCacheIndicator(`${type} data cached`);
+        }
+        
+        function showCacheIndicator(message) {
+            let indicator = document.getElementById('cacheIndicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'cacheIndicator';
+                indicator.className = 'cache-indicator';
+                document.body.appendChild(indicator);
+            }
+            
+            indicator.textContent = message;
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+        
+        function refreshTestimonials(forceRefresh = false) {
             if (document.getElementById('testimonialsTable')) {
                 const table = document.getElementById('testimonialsTable');
+                
+                // Use cache if available and valid
+                if (!forceRefresh && isCacheValid('testimonials')) {
+                    console.log('Using cached testimonials data');
+                    renderTestimonialsTable(dataCache.testimonials);
+                    return;
+                }
+                
                 table.classList.add('loading');
                 
                 // Load testimonials data via API without page reload
                 fetch('api/admin-crud.php?action=get_testimonials')
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
-                            const tbody = table.querySelector('tbody');
-                            // Clear the table completely first
-                            tbody.innerHTML = '';
-                            
-                            // Build all rows at once to prevent layout shifts
-                            let tableRows = '';
-                            
-                            data.data.forEach(testimonial => {
-                                const statusBadge = testimonial.is_active ? 
-                                    '<span class="badge bg-success">Active</span>' : 
-                                    '<span class="badge bg-secondary">Inactive</span>';
-                                
-                                const featuredBadge = testimonial.is_featured ? 
-                                    '<span class="badge bg-warning ms-1">Featured</span>' : '';
-                                
-                                const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
-                                
-                                tableRows += `
-                                    <tr data-id="${testimonial.id}">
-                                        <td>${testimonial.id}</td>
-                                        <td>${testimonial.name}</td>
-                                        <td>${testimonial.company || 'N/A'}</td>
-                                        <td>${testimonial.position || 'N/A'}</td>
-                                        <td class="text-warning">${stars}</td>
-                                        <td>${statusBadge}${featuredBadge}</td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-primary btn-sm me-1" onclick="viewTestimonial(${testimonial.id})" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="btn btn-warning btn-sm me-1" onclick="editTestimonial(${testimonial.id})" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button id="delete-testimonial-${testimonial.id}" class="btn btn-danger btn-sm" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `;
-                            });
-                            
-                            // Set all rows at once to prevent UI jumps
-                            tbody.innerHTML = tableRows;
+                            updateCache('testimonials', data.data);
+                            renderTestimonialsTable(data.data);
+                        } else {
+                            showNotification('Failed to load testimonials: ' + (data.message || 'Unknown error'), 'error');
                         }
                         table.classList.remove('loading');
                     })
                     .catch(error => {
                         console.error('Error refreshing testimonials:', error);
+                        showNotification('Error loading testimonials: ' + error.message, 'error');
                         table.classList.remove('loading');
                     });
             }
+        }
+        
+        function renderTestimonialsTable(testimonials) {
+            const table = document.getElementById('testimonialsTable');
+            const tbody = table.querySelector('tbody');
+            
+            // Store current scroll position
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Build all rows at once to prevent layout shifts
+            let tableRows = '';
+            
+            testimonials.forEach(testimonial => {
+                const statusBadge = testimonial.is_active ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                const featuredBadge = testimonial.is_featured ? 
+                    '<span class="badge bg-warning ms-1">Featured</span>' : '';
+                
+                const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
+                
+                tableRows += `
+                    <tr data-id="${testimonial.id}">
+                        <td>${testimonial.id}</td>
+                        <td>${testimonial.name}</td>
+                        <td>${testimonial.company || 'N/A'}</td>
+                        <td>${testimonial.position || 'N/A'}</td>
+                        <td class="text-warning">${stars}</td>
+                        <td>${statusBadge}${featuredBadge}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-primary btn-sm me-1" onclick="viewTestimonial(${testimonial.id})" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-warning btn-sm me-1" onclick="editTestimonial(${testimonial.id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button id="delete-testimonial-${testimonial.id}" class="btn btn-danger btn-sm" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            // Set all rows at once to prevent UI jumps
+            tbody.innerHTML = tableRows;
+            
+            // Restore scroll position
+            window.scrollTo(0, scrollTop);
         }
         
         function updateDashboardStats() {
@@ -1844,10 +1958,14 @@ if ($isLoggedIn) {
         }
         
         function setButtonLoading(buttonOrId, loading = true) {
-            // Handle both button element and button ID
+            // Handle both button element and button ID with better error handling
             let button;
             if (typeof buttonOrId === 'string') {
                 button = document.getElementById(buttonOrId);
+                if (!button) {
+                    // Try querySelector as fallback for class names or data attributes
+                    button = document.querySelector(`#${buttonOrId}, .${buttonOrId}, [data-id="${buttonOrId}"]`);
+                }
                 if (!button) {
                     console.warn('Button not found with ID:', buttonOrId);
                     return;
@@ -1858,19 +1976,25 @@ if ($isLoggedIn) {
             
             if (!button) return;
             
-            if (loading) {
-                button.disabled = true;
-                button.classList.add('btn-loading');
-                button.setAttribute('data-original-text', button.textContent);
-                button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
-            } else {
-                button.disabled = false;
-                button.classList.remove('btn-loading');
-                const originalText = button.getAttribute('data-original-text');
-                if (originalText) {
-                    button.textContent = originalText;
-                    button.removeAttribute('data-original-text');
+            try {
+                if (loading) {
+                    button.disabled = true;
+                    button.classList.add('btn-loading');
+                    if (!button.dataset.originalText) {
+                        button.dataset.originalText = button.innerHTML;
+                    }
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+                } else {
+                    button.disabled = false;
+                    button.classList.remove('btn-loading');
+                    const originalText = button.dataset.originalText;
+                    if (originalText) {
+                        button.innerHTML = originalText;
+                        delete button.dataset.originalText;
+                    }
                 }
+            } catch (error) {
+                console.error('Error in setButtonLoading:', error);
             }
         }
         
@@ -2040,8 +2164,9 @@ if ($isLoggedIn) {
                     
                     if (data.success) {
                         showNotification('Testimonial deleted successfully', 'success');
-                        // Auto-refresh testimonials data
-                        refreshTestimonials();
+                        // Invalidate cache and refresh data
+                        dataCache.testimonials = null;
+                        refreshTestimonials(true);
                         updateDashboardStats();
                     } else {
                         showNotification(data.message || 'Error deleting testimonial', 'error');
@@ -2249,6 +2374,72 @@ if ($isLoggedIn) {
         
         .tab-content.active {
             display: block;
+        }
+        
+        /* Enhanced loading states and transitions */
+        .table.loading {
+            opacity: 0.6;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        
+        .btn.loading {
+            position: relative;
+            color: transparent !important;
+        }
+        
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        /* Smooth scroll preservation */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Cache indicator */
+        .cache-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 123, 255, 0.1);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #007bff;
+            z-index: 1050;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .cache-indicator.show {
+            opacity: 1;
         }
     </style>
 </body>
