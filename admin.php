@@ -1208,7 +1208,7 @@ if ($isLoggedIn) {
         
         // AJAX helper function
         function makeAjaxRequest(data, callback) {
-            fetch(window.location.href, {
+            fetch('api/admin-crud.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
