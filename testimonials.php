@@ -5,7 +5,8 @@ require_once __DIR__ . '/config/database.php';
 try {
     $db = new Database();
 } catch (Exception $e) {
-    die("Database connection error: " . $e->getMessage());
+    error_log("Database connection error in testimonials.php: " . $e->getMessage());
+    die("Database connection error. Please try again later.");
 }
 
 // Fetch testimonials from database

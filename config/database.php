@@ -4,6 +4,33 @@
  * Railway-compatible database connection with environment variables
  */
 
+// Load environment variables from .env file if it exists
+function loadEnv($path) {
+    if (!file_exists($path)) {
+        return;
+    }
+    
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+        
+        if (!array_key_exists($name, $_ENV) && !getenv($name)) {
+            putenv(sprintf('%s=%s', $name, $value));
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+}
+
+// Load .env file
+loadEnv(__DIR__ . '/../.env');
+
 class Database {
     private $connection;
     
@@ -28,10 +55,14 @@ class Database {
                 $username = $dbParts['user'];
                 $password = $dbParts['pass'];
             } else {
-                // Fallback to Supabase or manual configuration
-                $dsn = "pgsql:host=db.brdavdukxvilpdzgbsqd.supabase.co;port=5432;dbname=postgres;sslmode=require";
-                $username = 'postgres';
-                $password = 'rsMwRvhAs3qxIWQ8';
+                // Fallback to Supabase or environment variables
+                $host = $_ENV['SUPABASE_HOST'] ?? getenv('SUPABASE_HOST') ?? 'db.brdavdukxvilpdzgbsqd.supabase.co';
+                $port = $_ENV['SUPABASE_PORT'] ?? getenv('SUPABASE_PORT') ?? '5432';
+                $database = $_ENV['SUPABASE_DATABASE'] ?? getenv('SUPABASE_DATABASE') ?? 'postgres';
+                $username = $_ENV['SUPABASE_USERNAME'] ?? getenv('SUPABASE_USERNAME') ?? 'postgres';
+                $password = $_ENV['SUPABASE_PASSWORD'] ?? getenv('SUPABASE_PASSWORD') ?? 'rsMwRvhAs3qxIWQ8';
+                
+                $dsn = "pgsql:host={$host};port={$port};dbname={$database};sslmode=require";
             }
             
             $options = [
@@ -44,7 +75,7 @@ class Database {
         } catch (PDOException $e) {
             // More detailed error logging for Railway
             error_log("Database connection failed: " . $e->getMessage());
-            die("Database connection failed. Please check your configuration.");
+            throw new Exception("Database connection failed: " . $e->getMessage());
         }
     }
     
@@ -161,23 +192,6 @@ class Database {
     }
 }
 
-// Helper functions
-function sanitizeInput($data) {
-    $data = trim($data);
-    $data = stripslashes($data);
-    $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
-    return $data;
-}
-
-function validateEmail($email) {
-    return filter_var($email, FILTER_VALIDATE_EMAIL);
-}
-
-// Initialize database connection
-try {
-    $db = new Database();
-} catch (Exception $e) {
-    die("Database initialization failed: " . $e->getMessage());
-}
-?>
+// Initialize database connection (but don't create global variable here)
+// Each file should instantiate its own database connection
 ?>
