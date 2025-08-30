@@ -922,11 +922,11 @@ try {
                 'testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials")['count'] ?? 0,
                 'blog_posts' => $db->fetchOne("SELECT COUNT(*) as count FROM blog_posts")['count'] ?? 0,
                 'newsletter_subscribers' => $db->fetchOne("SELECT COUNT(*) as count FROM newsletter_subscribers")['count'] ?? 0,
-                'active_services' => $db->fetchOne("SELECT COUNT(*) as count FROM services WHERE is_active = 1")['count'] ?? 0,
-                'active_projects' => $db->fetchOne("SELECT COUNT(*) as count FROM projects WHERE is_active = 1")['count'] ?? 0,
-                'active_testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials WHERE is_active = 1")['count'] ?? 0,
+                'active_services' => $db->fetchOne("SELECT COUNT(*) as count FROM services WHERE is_active = true")['count'] ?? 0,
+                'active_projects' => $db->fetchOne("SELECT COUNT(*) as count FROM projects WHERE is_active = true")['count'] ?? 0,
+                'active_testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials WHERE is_active = true")['count'] ?? 0,
                 'published_posts' => $db->fetchOne("SELECT COUNT(*) as count FROM blog_posts WHERE status = 'published'")['count'] ?? 0,
-                'active_subscribers' => $db->fetchOne("SELECT COUNT(*) as count FROM newsletter_subscribers WHERE is_active = 1")['count'] ?? 0
+                'active_subscribers' => $db->fetchOne("SELECT COUNT(*) as count FROM newsletter_subscribers WHERE is_active = true")['count'] ?? 0
             ];
             
             $response = [

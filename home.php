@@ -5,23 +5,23 @@ require_once 'config/database.php';
 $db = new Database();
 
 // Get featured services
-$featuredServices = $db->fetchAll("SELECT * FROM services WHERE is_active = 1 ORDER BY sort_order ASC, created_at DESC LIMIT 6");
+$featuredServices = $db->fetchAll("SELECT * FROM services WHERE is_active = true ORDER BY sort_order ASC, created_at DESC LIMIT 6");
 
 // Get featured projects
-$featuredProjects = $db->fetchAll("SELECT * FROM projects WHERE is_featured = 1 AND is_active = 1 ORDER BY created_at DESC LIMIT 3");
+$featuredProjects = $db->fetchAll("SELECT * FROM projects WHERE is_featured = true AND is_active = true ORDER BY created_at DESC LIMIT 3");
 
 // Get featured testimonials
-$featuredTestimonials = $db->fetchAll("SELECT * FROM testimonials WHERE is_featured = 1 AND is_active = 1 ORDER BY rating DESC, created_at DESC LIMIT 3");
+$featuredTestimonials = $db->fetchAll("SELECT * FROM testimonials WHERE is_featured = true AND is_active = true ORDER BY rating DESC, created_at DESC LIMIT 3");
 
 // Get latest blog posts
-$latestBlogPosts = $db->fetchAll("SELECT * FROM blog_posts WHERE is_published = 1 ORDER BY published_at DESC LIMIT 3");
+$latestBlogPosts = $db->fetchAll("SELECT * FROM blog_posts WHERE is_published = true ORDER BY published_at DESC LIMIT 3");
 
 // Get company stats
 $stats = [
-    'projects' => $db->fetchOne("SELECT COUNT(*) as count FROM projects WHERE is_active = 1")['count'] ?? 0,
+    'projects' => $db->fetchOne("SELECT COUNT(*) as count FROM projects WHERE is_active = true")['count'] ?? 0,
     'clients' => $db->fetchOne("SELECT COUNT(DISTINCT client_name) as count FROM projects WHERE client_name IS NOT NULL AND client_name != ''")['count'] ?? 0,
-    'services' => $db->fetchOne("SELECT COUNT(*) as count FROM services WHERE is_active = 1")['count'] ?? 0,
-    'testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials WHERE is_active = 1")['count'] ?? 0
+    'services' => $db->fetchOne("SELECT COUNT(*) as count FROM services WHERE is_active = true")['count'] ?? 0,
+    'testimonials' => $db->fetchOne("SELECT COUNT(*) as count FROM testimonials WHERE is_active = true")['count'] ?? 0
 ];
 ?>
 <!DOCTYPE html>

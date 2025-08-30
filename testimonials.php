@@ -11,7 +11,7 @@ try {
 
 // Fetch testimonials from database
 try {
-    $testimonials = $db->fetchAll("SELECT * FROM testimonials WHERE is_active = 1 ORDER BY is_featured DESC, created_at DESC");
+    $testimonials = $db->fetchAll("SELECT * FROM testimonials WHERE is_active = true ORDER BY is_featured DESC, created_at DESC");
 } catch (Exception $e) {
     $testimonials = [];
     error_log("Error fetching testimonials: " . $e->getMessage());
