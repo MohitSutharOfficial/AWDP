@@ -240,22 +240,22 @@ if ($isLoggedIn) {
             </div>
             
             <nav>
-                <a href="#dashboard" class="admin-nav-link active" data-tab="dashboard" onclick="return showTab('dashboard');">
+                <a href="#dashboard" class="admin-nav-link active" data-tab="dashboard">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     <kbd class="ms-auto">Ctrl+1</kbd>
                 </a>
-                <a href="#contacts" class="admin-nav-link" data-tab="contacts" onclick="return showTab('contacts');">
+                <a href="#contacts" class="admin-nav-link" data-tab="contacts">
                     <i class="fas fa-envelope me-2"></i>Contacts
                     <?php if ($newContactCount > 0): ?>
                         <span class="badge bg-warning ms-2"><?php echo $newContactCount; ?></span>
                     <?php endif; ?>
                     <kbd class="ms-auto">Ctrl+2</kbd>
                 </a>
-                <a href="#testimonials" class="admin-nav-link" data-tab="testimonials" onclick="return showTab('testimonials');">
+                <a href="#testimonials" class="admin-nav-link" data-tab="testimonials">
                     <i class="fas fa-star me-2"></i>Testimonials
                     <kbd class="ms-auto">Ctrl+3</kbd>
                 </a>
-                <a href="#database" class="admin-nav-link" data-tab="database" onclick="return showTab('database');">
+                <a href="#database" class="admin-nav-link" data-tab="database">
                     <i class="fas fa-database me-2"></i>Database
                     <kbd class="ms-auto">Ctrl+4</kbd>
                 </a>
@@ -457,6 +457,8 @@ if ($isLoggedIn) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        console.log('Script starting to load...');
+        
         // ===== IMMEDIATE GLOBAL FUNCTION DECLARATION =====
         // Define showTab immediately to ensure it's available for onclick handlers
         function showTab(tabName) {
@@ -516,6 +518,9 @@ if ($isLoggedIn) {
                 return false;
             }
         }
+        
+        console.log('showTab function defined successfully');
+        console.log('typeof showTab:', typeof showTab);
 
         // ===== GLOBAL VARIABLES =====
         let dataCache = {
@@ -1709,6 +1714,17 @@ if ($isLoggedIn) {
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Admin Panel Initialized');
+            
+            // Set up navigation event listeners
+            document.querySelectorAll('.admin-nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tabName = this.getAttribute('data-tab');
+                    console.log('Navigation clicked for tab:', tabName);
+                    showTab(tabName);
+                    return false;
+                });
+            });
             
             // Load initial dashboard data
             setTimeout(() => {
