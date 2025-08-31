@@ -396,9 +396,17 @@ if ($isLoggedIn) {
             <div id="testimonials" class="tab-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Client Testimonials</h2>
-                    <button class="btn btn-primary" onclick="refreshTestimonials()">
-                        <i class="fas fa-sync-alt me-2"></i>Refresh
-                    </button>
+                    <div class="btn-group">
+                        <button class="btn btn-success me-2" onclick="activateAllTestimonials()">
+                            <i class="fas fa-toggle-on me-2"></i>Activate All
+                        </button>
+                        <button class="btn btn-secondary me-2" onclick="deactivateAllTestimonials()">
+                            <i class="fas fa-toggle-off me-2"></i>Deactivate All
+                        </button>
+                        <button class="btn btn-primary" onclick="refreshTestimonials()">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="data-table">
@@ -708,6 +716,9 @@ if ($isLoggedIn) {
                         <td><span class="badge bg-${statusBadge}">${contact.status ? contact.status.charAt(0).toUpperCase() + contact.status.slice(1) : 'Unknown'}</span></td>
                         <td>
                             <div class="btn-group btn-group-sm">
+                                <button class="btn btn-info" onclick="viewContactDetails(${contact.id})" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
                                 ${contact.status === 'new' ? `
                                     <button class="btn btn-success" onclick="markAsRead(${contact.id})" title="Mark as Read">
                                         <i class="fas fa-check"></i>
@@ -779,6 +790,9 @@ if ($isLoggedIn) {
                                 </button>
                                 <button class="btn btn-warning" onclick="editTestimonial(${testimonial.id})" title="Edit">
                                     <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn ${testimonial.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleTestimonialStatus(${testimonial.id})" title="${testimonial.is_active ? 'Deactivate' : 'Activate'}">
+                                    <i class="fas fa-${testimonial.is_active ? 'toggle-off' : 'toggle-on'}"></i>
                                 </button>
                                 <button class="btn btn-danger" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
                                     <i class="fas fa-trash"></i>
@@ -976,35 +990,326 @@ if ($isLoggedIn) {
             alert(testimonial || 'No testimonial available');
         }
         
+        function viewContactDetails(contactId) {
+            // Find the contact in the loaded data
+            fetch('api/admin-crud.php?action=get_contacts')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const contact = data.data.find(c => c.id == contactId);
+                    if (contact) {
+                        // Create modal for contact details
+                        const modalContent = `
+                            <div class="modal fade" id="viewContactModal" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Contact Details</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <strong>Name:</strong> ${contact.name || 'N/A'}<br>
+                                                    <strong>Email:</strong> <a href="mailto:${contact.email}">${contact.email}</a><br>
+                                                    <strong>Phone:</strong> ${contact.phone ? `<a href="tel:${contact.phone}">${contact.phone}</a>` : 'N/A'}<br>
+                                                    <strong>Company:</strong> ${contact.company || 'N/A'}<br>
+                                                    <strong>Status:</strong> <span class="badge bg-${contact.status === 'new' ? 'warning' : contact.status === 'read' ? 'info' : 'success'}">${contact.status ? contact.status.charAt(0).toUpperCase() + contact.status.slice(1) : 'Unknown'}</span><br>
+                                                    <strong>Date:</strong> ${new Date(contact.created_at).toLocaleString()}
+                                                </div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <strong>Subject:</strong>
+                                                <p class="border p-2 mt-2">${contact.subject || 'No subject'}</p>
+                                            </div>
+                                            <div class="mt-3">
+                                                <strong>Message:</strong>
+                                                <p class="border p-3 mt-2" style="min-height: 100px; white-space: pre-wrap;">${contact.message || 'No message'}</p>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            ${contact.status === 'new' ? `
+                                                <button type="button" class="btn btn-success" onclick="markAsRead(${contact.id}); bootstrap.Modal.getInstance(document.getElementById('viewContactModal')).hide();">
+                                                    <i class="fas fa-check me-2"></i>Mark as Read
+                                                </button>
+                                            ` : ''}
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Remove existing modal if any
+                        const existingModal = document.getElementById('viewContactModal');
+                        if (existingModal) {
+                            existingModal.remove();
+                        }
+                        
+                        // Add modal to page
+                        document.body.insertAdjacentHTML('beforeend', modalContent);
+                        
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('viewContactModal'));
+                        modal.show();
+                    } else {
+                        showNotification('Contact not found', 'danger');
+                    }
+                } else {
+                    showNotification('Error loading contact details', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error loading contact details', 'danger');
+            });
+        }
+        
         function markAsRead(contactId) {
             if (confirm('Mark this contact as read?')) {
-                showNotification('Mark as read feature - coming soon', 'info');
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=mark_contact_read&contact_id=${contactId}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadContactsData(); // Refresh the contacts list
+                        updateDashboardStats(); // Update stats
+                    } else {
+                        showNotification(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error marking contact as read', 'danger');
+                });
             }
         }
         
         function deleteContact(contactId) {
-            if (confirm('Are you sure you want to delete this contact?')) {
-                showNotification('Delete contact feature - coming soon', 'info');
+            if (confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=delete_contact&contact_id=${contactId}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadContactsData(); // Refresh the contacts list
+                        updateDashboardStats(); // Update stats
+                    } else {
+                        showNotification(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error deleting contact', 'danger');
+                });
             }
         }
         
         function markAllRead() {
-            if (confirm('Mark all contacts as read?')) {
-                showNotification('Mark all read feature - coming soon', 'info');
+            if (confirm('Mark all unread contacts as read?')) {
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=mark_all_read'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadContactsData(); // Refresh the contacts list
+                        updateDashboardStats(); // Update stats
+                    } else {
+                        showNotification(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error marking all contacts as read', 'danger');
+                });
             }
         }
         
         function viewTestimonial(testimonialId) {
-            showNotification('View testimonial feature - coming soon', 'info');
+            // Find the testimonial in the loaded data
+            fetch('api/admin-crud.php?action=get_testimonials')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const testimonial = data.data.find(t => t.id == testimonialId);
+                    if (testimonial) {
+                        // Create modal or show detailed view
+                        const modalContent = `
+                            <div class="modal fade" id="viewTestimonialModal" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Testimonial Details</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <strong>Name:</strong> ${testimonial.customer_name}<br>
+                                                    <strong>Email:</strong> ${testimonial.email || 'N/A'}<br>
+                                                    <strong>Rating:</strong> ${testimonial.rating}/5 ⭐<br>
+                                                    <strong>Status:</strong> ${testimonial.is_active ? 'Active' : 'Inactive'}<br>
+                                                    <strong>Date:</strong> ${new Date(testimonial.created_at).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <strong>Testimonial:</strong>
+                                                <p class="border p-3 mt-2">${testimonial.testimonial}</p>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Remove existing modal if any
+                        const existingModal = document.getElementById('viewTestimonialModal');
+                        if (existingModal) {
+                            existingModal.remove();
+                        }
+                        
+                        // Add modal to page
+                        document.body.insertAdjacentHTML('beforeend', modalContent);
+                        
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('viewTestimonialModal'));
+                        modal.show();
+                    } else {
+                        showNotification('Testimonial not found', 'danger');
+                    }
+                } else {
+                    showNotification('Error loading testimonial details', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error loading testimonial details', 'danger');
+            });
         }
         
         function editTestimonial(testimonialId) {
             showNotification('Edit testimonial feature - coming soon', 'info');
         }
         
+        function toggleTestimonialStatus(testimonialId) {
+            if (confirm('Toggle testimonial active status?')) {
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=toggle_testimonial_status&testimonial_id=${testimonialId}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadTestimonialsData(); // Refresh the testimonials list
+                    } else {
+                        showNotification(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error toggling testimonial status', 'danger');
+                });
+            }
+        }
+        
         function deleteTestimonial(testimonialId) {
-            if (confirm('Are you sure you want to delete this testimonial?')) {
-                showNotification('Delete testimonial feature - coming soon', 'info');
+            if (confirm('Are you sure you want to delete this testimonial? This action cannot be undone.')) {
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=delete_testimonial&testimonial_id=${testimonialId}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadTestimonialsData(); // Refresh the testimonials list
+                        updateDashboardStats(); // Update stats
+                    } else {
+                        showNotification(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error deleting testimonial', 'danger');
+                });
+            }
+        }
+
+        function activateAllTestimonials() {
+            if (confirm('Activate all testimonials?')) {
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=activate_all_testimonials'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadTestimonialsData(); // Refresh the testimonials list
+                    } else {
+                        showNotification(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error activating all testimonials', 'danger');
+                });
+            }
+        }
+
+        function deactivateAllTestimonials() {
+            if (confirm('Deactivate all testimonials?')) {
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=deactivate_all_testimonials'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        loadTestimonialsData(); // Refresh the testimonials list
+                    } else {
+                        showNotification(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Error deactivating all testimonials', 'danger');
+                });
             }
         }
 

@@ -137,6 +137,24 @@ try {
             }
             break;
 
+        case 'activate_all_testimonials':
+            $result = $db->execute("UPDATE testimonials SET is_active = 1");
+            if ($result) {
+                $response = ['success' => true, 'message' => 'All testimonials activated'];
+            } else {
+                $response = ['success' => false, 'message' => 'Failed to activate testimonials'];
+            }
+            break;
+
+        case 'deactivate_all_testimonials':
+            $result = $db->execute("UPDATE testimonials SET is_active = 0");
+            if ($result) {
+                $response = ['success' => true, 'message' => 'All testimonials deactivated'];
+            } else {
+                $response = ['success' => false, 'message' => 'Failed to deactivate testimonials'];
+            }
+            break;
+
         default:
             $response = ['success' => false, 'message' => 'Unknown action: ' . $action];
             break;
