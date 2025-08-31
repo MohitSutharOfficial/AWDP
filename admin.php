@@ -527,22 +527,22 @@ if ($isLoggedIn) {
             </div>
             
             <nav>
-                <a href="#dashboard" class="admin-nav-link active" data-tab="dashboard" onclick="showTab('dashboard'); return false;">
+                <a href="#dashboard" class="admin-nav-link active" data-tab="dashboard" onclick="return showTab('dashboard');">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     <kbd class="ms-auto">Ctrl+1</kbd>
                 </a>
-                <a href="#contacts" class="admin-nav-link" data-tab="contacts" onclick="showTab('contacts'); return false;">
+                <a href="#contacts" class="admin-nav-link" data-tab="contacts" onclick="return showTab('contacts');">
                     <i class="fas fa-envelope me-2"></i>Contacts
                     <?php if ($newContactCount > 0): ?>
                         <span class="badge bg-warning ms-2"><?php echo $newContactCount; ?></span>
                     <?php endif; ?>
                     <kbd class="ms-auto">Ctrl+2</kbd>
                 </a>
-                <a href="#testimonials" class="admin-nav-link" data-tab="testimonials" onclick="showTab('testimonials'); return false;">
+                <a href="#testimonials" class="admin-nav-link" data-tab="testimonials" onclick="return showTab('testimonials');">
                     <i class="fas fa-star me-2"></i>Testimonials
                     <kbd class="ms-auto">Ctrl+3</kbd>
                 </a>
-                <a href="#database" class="admin-nav-link" data-tab="database" onclick="showTab('database'); return false;">
+                <a href="#database" class="admin-nav-link" data-tab="database" onclick="return showTab('database');">
                     <i class="fas fa-database me-2"></i>Database
                     <kbd class="ms-auto">Ctrl+4</kbd>
                 </a>
@@ -1183,52 +1183,143 @@ if ($isLoggedIn) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Simple, bulletproof navigation function
+        // Declare showTab function FIRST before any other code
         function showTab(tabName) {
             console.log('showTab called with:', tabName);
             
-            // Hide all tab content
-            const allTabs = document.querySelectorAll('.tab-content');
-            allTabs.forEach(tab => {
-                tab.classList.remove('active');
-                tab.style.display = 'none';
-            });
-            
-            // Remove active class from all nav links
-            const allLinks = document.querySelectorAll('.admin-nav-link');
-            allLinks.forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // Show selected tab
-            const selectedTab = document.getElementById(tabName);
-            if (selectedTab) {
-                selectedTab.classList.add('active');
-                selectedTab.style.display = 'block';
-                console.log('Showing tab:', tabName);
-            } else {
-                console.error('Tab not found:', tabName);
+            try {
+                // Hide all tab content
+                const allTabs = document.querySelectorAll('.tab-content');
+                allTabs.forEach(tab => {
+                    tab.classList.remove('active');
+                    tab.style.display = 'none';
+                });
+                
+                // Remove active class from all nav links
+                const allLinks = document.querySelectorAll('.admin-nav-link');
+                allLinks.forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                // Show selected tab
+                const selectedTab = document.getElementById(tabName);
+                if (selectedTab) {
+                    selectedTab.classList.add('active');
+                    selectedTab.style.display = 'block';
+                    console.log('Showing tab:', tabName);
+                } else {
+                    console.error('Tab not found:', tabName);
+                    return false;
+                }
+                
+                // Add active class to clicked nav link
+                const selectedLink = document.querySelector(`[href="#${tabName}"]`);
+                if (selectedLink) {
+                    selectedLink.classList.add('active');
+                    console.log('Activated link for:', tabName);
+                }
+                
+                // Load data for specific tabs
+                setTimeout(() => {
+                    if (tabName === 'contacts') {
+                        loadContactsData();
+                    } else if (tabName === 'testimonials') {
+                        loadTestimonialsData();
+                    } else if (tabName === 'database') {
+                        loadDatabaseData();
+                    }
+                }, 100);
+                
+                return false;
+            } catch (error) {
+                console.error('Error in showTab:', error);
+                return false;
             }
-            
-            // Add active class to clicked nav link
-            const selectedLink = document.querySelector(`[data-tab="${tabName}"]`);
-            if (selectedLink) {
-                selectedLink.classList.add('active');
-                console.log('Activated link for:', tabName);
-            }
-            
-            // Load data for specific tabs
-            if (tabName === 'contacts') {
-                loadContactsData();
-            } else if (tabName === 'testimonials') {
-                loadTestimonialsData();
-            } else if (tabName === 'database') {
-                loadDatabaseData();
-            }
-            
-            return false;
         }
         
+        // Make showTab globally available immediately
+        window.showTab = showTab;
+    </script>
+    
+    <!-- Enhanced Admin JS -->
+    <script src="assets/js/admin-enhanced.js"></script>
+    
+    <script>
+        // Ensure showTab function is available immediately
+        function ensureShowTabWorks() {
+            // Simple, reliable showTab function
+            if (typeof window.showTab !== 'function') {
+                window.showTab = function(tabName) {
+                    console.log('Fallback showTab called with:', tabName);
+                    
+                    // Hide all tab content
+                    document.querySelectorAll('.tab-content').forEach(tab => {
+                        tab.classList.remove('active');
+                        tab.style.display = 'none';
+                    });
+                    
+                    // Remove active class from all nav links
+                    document.querySelectorAll('.admin-nav-link').forEach(link => {
+                        link.classList.remove('active');
+                    });
+                    
+                    // Show selected tab
+                    const selectedTab = document.getElementById(tabName);
+                    if (selectedTab) {
+                        selectedTab.classList.add('active');
+                        selectedTab.style.display = 'block';
+                    }
+                    
+                    // Add active class to clicked nav link
+                    const selectedLink = document.querySelector(`[href="#${tabName}"]`);
+                    if (selectedLink) {
+                        selectedLink.classList.add('active');
+                    }
+                    
+                    return false;
+                };
+            }
+        }
+        
+        // Call immediately and after DOM load
+        ensureShowTabWorks();
+        document.addEventListener('DOMContentLoaded', ensureShowTabWorks);
+        
+        // Add direct click handlers to navigation links as a backup
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const navLinks = document.querySelectorAll('.admin-nav-link[href^="#"]');
+                navLinks.forEach(function(link) {
+                    const href = link.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        const tabName = href.substring(1);
+                        
+                        // Add both event listener and onclick
+                        link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            if (typeof window.showTab === 'function') {
+                                window.showTab(tabName);
+                            }
+                            return false;
+                        });
+                        
+                        // Force onclick attribute
+                        link.onclick = function(e) {
+                            e.preventDefault();
+                            if (typeof window.showTab === 'function') {
+                                window.showTab(tabName);
+                            }
+                            return false;
+                        };
+                    }
+                });
+                
+                console.log('Navigation backup handlers installed');
+            }, 500);
+        });
+    </script>
+    
+    <script>
         // Load data functions
         function loadContactsData() {
             console.log('Loading contacts data...');
@@ -1260,9 +1351,6 @@ if ($isLoggedIn) {
             console.log('Loading database data...');
             // Database tab logic here
         }
-        
-        // Make functions globally available
-        window.showTab = showTab;
         
         // Global variables
         let currentTab = 'dashboard';
@@ -1363,7 +1451,7 @@ if ($isLoggedIn) {
         function initializeEventListeners() {
             console.log('Initializing event listeners...');
             
-            // Tab switching functionality
+            // Tab switching functionality with both event listeners and onclick fallback
             const navLinks = document.querySelectorAll('.admin-nav-link');
             console.log('Found nav links:', navLinks.length);
             
@@ -1371,17 +1459,35 @@ if ($isLoggedIn) {
                 const href = link.getAttribute('href');
                 console.log('Adding click listener to:', href);
                 
-                link.addEventListener('click', function(e) {
-                    console.log('Nav link clicked:', href);
-                    
-                    if (href && href.startsWith('#')) {
+                // Remove any existing listeners first
+                link.removeEventListener('click', handleNavClick);
+                
+                // Add new event listener
+                link.addEventListener('click', handleNavClick);
+                
+                // Also ensure onclick is set properly
+                if (href && href.startsWith('#')) {
+                    const tabId = href.substring(1);
+                    link.onclick = function(e) {
                         e.preventDefault();
-                        const tabId = href.substring(1);
-                        console.log('Switching to tab:', tabId);
-                        switchTab(tabId);
-                    }
-                });
+                        return showTab(tabId);
+                    };
+                }
             });
+            
+            // Handle navigation click events
+            function handleNavClick(e) {
+                const href = this.getAttribute('href');
+                console.log('Nav link clicked:', href);
+                
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const tabId = href.substring(1);
+                    console.log('Switching to tab:', tabId);
+                    showTab(tabId);
+                    return false;
+                }
+            }
             
             // Add testimonial form submission
             const addTestimonialForm = document.getElementById('addTestimonialForm');
