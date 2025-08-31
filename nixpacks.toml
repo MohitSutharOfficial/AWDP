@@ -1,8 +1,11 @@
 [phases.build]
-cmds = ["echo 'Building PHP application for Railway...'"]
+cmds = [
+    "echo 'Building PHP application for Railway...'",
+    "php --version"
+]
 
 [phases.start]
-cmd = "php -S 0.0.0.0:$PORT"
+cmd = "php -S 0.0.0.0:$PORT -t ."
 
 [variables]
-PHP_VERSION = "8.1"
+PHP_VERSION = "8.2"
