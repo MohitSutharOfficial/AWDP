@@ -1541,24 +1541,72 @@ if ($isLoggedIn) {
         // Global variables
         let currentTab = 'dashboard';
         
+        // ===== INITIALIZATION AND TESTING =====
+        function testAPIConnection() {
+            console.log('Testing API connection...');
+            fetch('api/admin-crud.php?action=test')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('✅ API connection successful:', data.message);
+                    } else {
+                        console.error('❌ API test failed:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ API connection error:', error);
+                });
+        }
+        
+        function initializeEventListeners() {
+            console.log('Initializing event listeners...');
+            
+            // Initialize testimonial events
+            bindTestimonialEvents();
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case '1':
+                            e.preventDefault();
+                            showTab('dashboard');
+                            break;
+                        case '2':
+                            e.preventDefault();
+                            showTab('contacts');
+                            break;
+                        case '3':
+                            e.preventDefault();
+                            showTab('testimonials');
+                            break;
+                        case '4':
+                            e.preventDefault();
+                            showTab('database');
+                            break;
+                    }
+                }
+            });
+            
+            console.log('Event listeners initialized successfully');
+        }
+        
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM Content Loaded - Starting initialization...');
+            console.log('🚀 Admin Panel Initializing...');
             
-            // Add temporary alert to debug
-            console.log('Checking if elements exist...');
-            const navLinks = document.querySelectorAll('.admin-nav-link');
-            console.log('Found nav links on page load:', navLinks.length);
-            
+            // Step 1: Initialize event listeners
             initializeEventListeners();
-            bindTestimonialEvents();
-            showNotifications();
             
-            // Test API connectivity on page load
+            // Step 2: Test API connection
             testAPIConnection();
             
-            // Debug: Check for stuck loading states after 5 seconds
-            setTimeout(checkForStuckLoading, 5000);
+            // Step 3: Load initial dashboard data
+            setTimeout(() => {
+                updateDashboardStatsRealTime();
+            }, 500);
+            
+            console.log('✅ Admin Panel Initialization Complete');
         });
         
         // Debug function to check for stuck loading states
@@ -1836,66 +1884,198 @@ if ($isLoggedIn) {
         }
         
         // Contact management functions with real-time dashboard updates
-        // Central data loading functions
+        // ===== DISPLAY FUNCTIONS =====
+        function displayContacts(contacts) {
+            console.log('Displaying contacts:', contacts.length);
+            const tableBody = document.querySelector('#contactsTable tbody');
+            if (!tableBody) {
+                console.error('Contacts table body not found');
+                return;
+            }
+            
+            if (!contacts || contacts.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox me-2"></i>
+                            No contact submissions found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let tableRows = '';
+            contacts.forEach(contact => {
+                const statusBadge = contact.status === 'new' ? 'warning' : 
+                                  contact.status === 'read' ? 'info' : 'success';
+                
+                const dateFormatted = contact.created_at ? 
+                    new Date(contact.created_at).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : 'N/A';
+                
+                tableRows += `
+                    <tr data-id="${contact.id}">
+                        <td>${contact.id}</td>
+                        <td>${contact.name || 'N/A'}</td>
+                        <td>
+                            <a href="mailto:${contact.email}" class="text-decoration-none">
+                                ${contact.email}
+                            </a>
+                        </td>
+                        <td>
+                            ${contact.phone ? `<a href="tel:${contact.phone}" class="text-decoration-none">${contact.phone}</a>` : '-'}
+                        </td>
+                        <td>${contact.company || '-'}</td>
+                        <td>${contact.subject || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showMessage(${contact.id}, '${(contact.message || '').replace(/'/g, "\\'")}')">
+                                <i class="fas fa-eye me-1"></i>View
+                            </button>
+                        </td>
+                        <td>${dateFormatted}</td>
+                        <td>
+                            <span class="badge bg-${statusBadge}">
+                                ${contact.status ? contact.status.charAt(0).toUpperCase() + contact.status.slice(1) : 'Unknown'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                ${contact.status === 'new' ? `
+                                    <button id="mark-read-${contact.id}" class="btn btn-success" onclick="markAsRead(${contact.id})" title="Mark as Read">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                ` : ''}
+                                <button id="delete-contact-${contact.id}" class="btn btn-danger" onclick="deleteContact(${contact.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableRows;
+        }
+
+        // ===== CORE DATA LOADING FUNCTIONS =====
         async function loadContactsData() {
-            showLoading();
+            console.log('Loading contacts data...');
             try {
                 const response = await fetch('api/admin-crud.php?action=get_contacts');
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+                
                 const data = await response.json();
+                console.log('Contacts API response:', data);
                 
                 if (data.success) {
                     dataCache.contacts = data.data || [];
                     displayContacts(dataCache.contacts);
+                    console.log('Contacts loaded successfully:', dataCache.contacts.length);
                     return dataCache.contacts;
                 } else {
                     throw new Error(data.message || 'Failed to load contacts');
                 }
             } catch (error) {
                 console.error('Error loading contacts:', error);
-                showNotification('Error loading contacts: ' + error.message, 'error');
+                showNotification('Error loading contacts: ' + error.message, 'danger');
+                
+                // Display empty state
+                const tableBody = document.querySelector('#contactsTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading contacts: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                }
                 return [];
-            } finally {
-                hideLoading();
             }
         }
         
         async function loadTestimonialsData() {
-            showLoading();
+            console.log('Loading testimonials data...');
             try {
                 const response = await fetch('api/admin-crud.php?action=get_testimonials');
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+                
                 const data = await response.json();
+                console.log('Testimonials API response:', data);
                 
                 if (data.success) {
                     dataCache.testimonials = data.data || [];
                     renderTestimonialsTable(dataCache.testimonials);
+                    console.log('Testimonials loaded successfully:', dataCache.testimonials.length);
                     return dataCache.testimonials;
                 } else {
                     throw new Error(data.message || 'Failed to load testimonials');
                 }
             } catch (error) {
                 console.error('Error loading testimonials:', error);
-                showNotification('Error loading testimonials: ' + error.message, 'error');
+                showNotification('Error loading testimonials: ' + error.message, 'danger');
+                
+                // Display empty state
+                const tableBody = document.querySelector('#testimonialsTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading testimonials: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                }
                 return [];
-            } finally {
-                hideLoading();
             }
         }
         
         async function loadDatabaseData() {
-            showLoading();
+            console.log('Loading database data...');
             try {
-                await renderDatabaseTab();
+                // First get the stats
+                const response = await fetch('api/admin-crud.php?action=get_stats');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    await renderDatabaseTab(data.data);
+                    console.log('Database data loaded successfully');
+                } else {
+                    throw new Error(data.message || 'Failed to load stats for database');
+                }
             } catch (error) {
                 console.error('Error loading database data:', error);
-                showNotification('Error loading database data: ' + error.message, 'error');
-            } finally {
-                hideLoading();
+                showNotification('Error loading database data: ' + error.message, 'danger');
+                
+                // Display error state
+                const databaseContent = document.querySelector('#database .data-table');
+                if (databaseContent) {
+                    databaseContent.innerHTML = `
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-exclamation-triangle mb-3" style="font-size: 2rem;"></i>
+                            <h5>Error Loading Database Data</h5>
+                            <p>${error.message}</p>
+                            <button class="btn btn-primary" onclick="loadDatabaseData()">
+                                <i class="fas fa-retry me-2"></i>Try Again
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -2192,8 +2372,77 @@ if ($isLoggedIn) {
                 });
         }
         
+        // ===== REFRESH FUNCTIONS (Required by user - no search/filter, just refresh) =====
+        async function refreshContacts() {
+            console.log('Refreshing contacts...');
+            showLoading();
+            
+            try {
+                // Clear cache to force fresh data
+                dataCache.contacts = null;
+                
+                // Load fresh data
+                await loadContactsData();
+                
+                // Update dashboard stats in real-time
+                await updateDashboardStatsRealTime();
+                
+                showNotification('Contacts refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Error refreshing contacts:', error);
+                showNotification('Error refreshing contacts: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function refreshTestimonials() {
+            console.log('Refreshing testimonials...');
+            showLoading();
+            
+            try {
+                // Clear cache to force fresh data
+                dataCache.testimonials = null;
+                
+                // Load fresh data
+                await loadTestimonialsData();
+                
+                // Update dashboard stats in real-time
+                await updateDashboardStatsRealTime();
+                
+                showNotification('Testimonials refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Error refreshing testimonials:', error);
+                showNotification('Error refreshing testimonials: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function refreshDashboard() {
+            console.log('Refreshing dashboard...');
+            showLoading();
+            
+            try {
+                // Clear all caches
+                dataCache.stats = null;
+                dataCache.contacts = null;
+                dataCache.testimonials = null;
+                
+                // Update dashboard stats
+                await updateDashboardStatsRealTime();
+                
+                showNotification('Dashboard refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Error refreshing dashboard:', error);
+                showNotification('Error refreshing dashboard: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+
         // Enhanced refresh functions with API calls and caching
-        function refreshContacts(forceRefresh = false) {
+        function refreshContacts_OLD(forceRefresh = false) {
             if (document.getElementById('contactsTable')) {
                 const table = document.getElementById('contactsTable');
                 
