@@ -1680,6 +1680,26 @@ if ($isLoggedIn) {
             }
         }
 
+        // ===== GLOBAL FUNCTION EXPORTS =====
+        // Ensure all functions called from onclick handlers are globally accessible
+        window.showTab = showTab;
+        window.refreshDashboard = refreshDashboard;
+        window.markAllRead = markAllRead;
+        window.refreshContacts = refreshContacts;
+        window.addNewTestimonial = addNewTestimonial;
+        window.activateAllTestimonials = activateAllTestimonials;
+        window.deactivateAllTestimonials = deactivateAllTestimonials;
+        window.refreshTestimonials = refreshTestimonials;
+        window.refreshDatabase = refreshDatabase;
+        window.loadDatabaseData = loadDatabaseData;
+        window.showMessage = showMessage;
+        window.viewContactDetails = viewContactDetails;
+        window.markAsRead = markAsRead;
+        window.deleteContact = deleteContact;
+        window.showTestimonial = showTestimonial;
+        window.viewTestimonial = viewTestimonial;
+        window.editTestimonial = editTestimonial;
+
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Admin Panel Initialized');
