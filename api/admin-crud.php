@@ -155,6 +155,61 @@ try {
             }
             break;
 
+        case 'add_testimonial':
+            $name = trim($_POST['name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $company = trim($_POST['company'] ?? '');
+            $position = trim($_POST['position'] ?? '');
+            $testimonial = trim($_POST['testimonial'] ?? '');
+            $rating = intval($_POST['rating'] ?? 5);
+            $is_active = intval($_POST['is_active'] ?? 1);
+            $is_featured = intval($_POST['is_featured'] ?? 0);
+            
+            if (empty($name) || empty($testimonial)) {
+                $response = ['success' => false, 'message' => 'Name and testimonial are required'];
+            } else {
+                $result = $db->execute(
+                    "INSERT INTO testimonials (name, email, company, position, testimonial, rating, is_active, is_featured, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [$name, $email, $company, $position, $testimonial, $rating, $is_active, $is_featured]
+                );
+                
+                if ($result) {
+                    $response = ['success' => true, 'message' => 'Testimonial added successfully'];
+                } else {
+                    $response = ['success' => false, 'message' => 'Failed to add testimonial'];
+                }
+            }
+            break;
+
+        case 'update_testimonial':
+            $testimonialId = intval($_POST['testimonial_id'] ?? 0);
+            $name = trim($_POST['name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $company = trim($_POST['company'] ?? '');
+            $position = trim($_POST['position'] ?? '');
+            $testimonial = trim($_POST['testimonial'] ?? '');
+            $rating = intval($_POST['rating'] ?? 5);
+            $is_active = intval($_POST['is_active'] ?? 1);
+            $is_featured = intval($_POST['is_featured'] ?? 0);
+            
+            if ($testimonialId <= 0) {
+                $response = ['success' => false, 'message' => 'Invalid testimonial ID'];
+            } else if (empty($name) || empty($testimonial)) {
+                $response = ['success' => false, 'message' => 'Name and testimonial are required'];
+            } else {
+                $result = $db->execute(
+                    "UPDATE testimonials SET name = ?, email = ?, company = ?, position = ?, testimonial = ?, rating = ?, is_active = ?, is_featured = ? WHERE id = ?",
+                    [$name, $email, $company, $position, $testimonial, $rating, $is_active, $is_featured, $testimonialId]
+                );
+                
+                if ($result) {
+                    $response = ['success' => true, 'message' => 'Testimonial updated successfully'];
+                } else {
+                    $response = ['success' => false, 'message' => 'Failed to update testimonial'];
+                }
+            }
+            break;
+
         default:
             $response = ['success' => false, 'message' => 'Unknown action: ' . $action];
             break;

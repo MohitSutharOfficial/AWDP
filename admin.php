@@ -397,6 +397,9 @@ if ($isLoggedIn) {
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Client Testimonials</h2>
                     <div class="btn-group">
+                        <button class="btn btn-primary me-2" onclick="addNewTestimonial()">
+                            <i class="fas fa-plus me-2"></i>Add New
+                        </button>
                         <button class="btn btn-success me-2" onclick="activateAllTestimonials()">
                             <i class="fas fa-toggle-on me-2"></i>Activate All
                         </button>
@@ -462,7 +465,7 @@ if ($isLoggedIn) {
         };
 
         // ===== UTILITY FUNCTIONS =====
-        function showLoading() {
+        function showLoading(message = 'Loading...') {
             const existingLoader = document.querySelector('.loading-overlay');
             if (existingLoader) return;
             
@@ -480,21 +483,54 @@ if ($isLoggedIn) {
                     <div class="spinner-border text-primary mb-3" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <div class="text-primary">Loading...</div>
+                    <div class="text-primary">${message}</div>
                 </div>
             `;
             
             document.body.appendChild(loadingOverlay);
         }
-        
+
         function hideLoading() {
             const loadingOverlay = document.querySelector('.loading-overlay');
             if (loadingOverlay) {
                 loadingOverlay.remove();
             }
         }
-        
-        function showNotification(message, type = 'info') {
+
+        function showTableLoading(tableSelector, message = 'Loading data...') {
+            const tableBody = document.querySelector(`${tableSelector} tbody`);
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-4">
+                            <div class="d-flex justify-content-center align-items-center">
+                                <div class="spinner-border text-primary me-3" role="status" aria-hidden="true"></div>
+                                <span class="text-muted">${message}</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function showProcessingButton(button, originalText = 'Processing...') {
+            if (button) {
+                button.disabled = true;
+                button.dataset.originalHtml = button.innerHTML;
+                button.innerHTML = `
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    ${originalText}
+                `;
+            }
+        }
+
+        function hideProcessingButton(button) {
+            if (button && button.dataset.originalHtml) {
+                button.disabled = false;
+                button.innerHTML = button.dataset.originalHtml;
+                delete button.dataset.originalHtml;
+            }
+        }        function showNotification(message, type = 'info') {
             const existingNotifications = document.querySelectorAll('.notification-toast');
             existingNotifications.forEach(notification => notification.remove());
             
@@ -570,6 +606,8 @@ if ($isLoggedIn) {
         // ===== DATA LOADING FUNCTIONS =====
         async function loadContactsData() {
             console.log('Loading contacts data...');
+            showTableLoading('#contactsTable', 'Loading contacts...');
+            
             try {
                 const response = await fetch('api/admin-crud.php?action=get_contacts');
                 if (!response.ok) {
@@ -605,6 +643,8 @@ if ($isLoggedIn) {
         
         async function loadTestimonialsData() {
             console.log('Loading testimonials data...');
+            showTableLoading('#testimonialsTable', 'Loading testimonials...');
+            
             try {
                 const response = await fetch('api/admin-crud.php?action=get_testimonials');
                 if (!response.ok) {
@@ -881,45 +921,54 @@ if ($isLoggedIn) {
 
         // ===== REFRESH FUNCTIONS =====
         async function refreshContacts() {
-            showLoading();
+            const button = event.target;
+            showProcessingButton(button, 'Refreshing...');
+            
             try {
                 dataCache.contacts = null;
                 await loadContactsData();
                 await updateDashboardStats();
                 showNotification('Contacts refreshed successfully!', 'success');
+                hideProcessingButton(button);
             } catch (error) {
                 showNotification('Error refreshing contacts: ' + error.message, 'danger');
-            } finally {
-                hideLoading();
+                hideProcessingButton(button);
             }
         }
         
         async function refreshTestimonials() {
-            showLoading();
+            const button = event.target;
+            showProcessingButton(button, 'Refreshing...');
+            
             try {
                 dataCache.testimonials = null;
                 await loadTestimonialsData();
                 await updateDashboardStats();
                 showNotification('Testimonials refreshed successfully!', 'success');
+                hideProcessingButton(button);
             } catch (error) {
                 showNotification('Error refreshing testimonials: ' + error.message, 'danger');
-            } finally {
-                hideLoading();
+                hideProcessingButton(button);
             }
         }
         
         async function refreshDashboard() {
-            showLoading();
+            const button = event.target;
+            showProcessingButton(button, 'Refreshing...');
+            
             try {
+                // Clear cache
                 dataCache.stats = null;
                 dataCache.contacts = null;
                 dataCache.testimonials = null;
-                await updateDashboardStats();
-                showNotification('Dashboard refreshed successfully!', 'success');
+                
+                // Update dashboard stats with loading indicators
+                await updateDashboardStats(true);
+                
+                hideProcessingButton(button);
             } catch (error) {
                 showNotification('Error refreshing dashboard: ' + error.message, 'danger');
-            } finally {
-                hideLoading();
+                hideProcessingButton(button);
             }
         }
         
@@ -936,8 +985,16 @@ if ($isLoggedIn) {
         }
 
         // ===== REAL-TIME UPDATE FUNCTIONS =====
-        async function updateDashboardStats() {
+        async function updateDashboardStats(showLoading = false) {
             try {
+                if (showLoading) {
+                    // Show loading on stat cards
+                    const statCards = document.querySelectorAll('.stat-widget .stat-number');
+                    statCards.forEach(card => {
+                        card.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
+                    });
+                }
+                
                 const response = await fetch('api/admin-crud.php?action=get_stats');
                 if (!response.ok) return;
                 
@@ -945,9 +1002,16 @@ if ($isLoggedIn) {
                 if (data.success) {
                     updateStatCards(data.data);
                     updateNavBadges(data.data);
+                    
+                    if (showLoading) {
+                        showNotification('Dashboard updated successfully', 'success');
+                    }
                 }
             } catch (error) {
                 console.error('Error updating dashboard stats:', error);
+                if (showLoading) {
+                    showNotification('Error updating dashboard', 'danger');
+                }
             }
         }
         
@@ -1067,6 +1131,9 @@ if ($isLoggedIn) {
         
         function markAsRead(contactId) {
             if (confirm('Mark this contact as read?')) {
+                const button = event.target;
+                showProcessingButton(button, 'Processing...');
+                
                 fetch('api/admin-crud.php', {
                     method: 'POST',
                     headers: {
@@ -1078,21 +1145,30 @@ if ($isLoggedIn) {
                 .then(data => {
                     if (data.success) {
                         showNotification(data.message, 'success');
-                        loadContactsData(); // Refresh the contacts list
-                        updateDashboardStats(); // Update stats
+                        Promise.all([
+                            loadContactsData(),
+                            updateDashboardStats()
+                        ]).then(() => {
+                            hideProcessingButton(button);
+                        });
                     } else {
                         showNotification(data.message, 'danger');
+                        hideProcessingButton(button);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     showNotification('Error marking contact as read', 'danger');
+                    hideProcessingButton(button);
                 });
             }
         }
         
         function deleteContact(contactId) {
             if (confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
+                const button = event.target;
+                showProcessingButton(button, 'Deleting...');
+                
                 fetch('api/admin-crud.php', {
                     method: 'POST',
                     headers: {
@@ -1104,21 +1180,30 @@ if ($isLoggedIn) {
                 .then(data => {
                     if (data.success) {
                         showNotification(data.message, 'success');
-                        loadContactsData(); // Refresh the contacts list
-                        updateDashboardStats(); // Update stats
+                        Promise.all([
+                            loadContactsData(),
+                            updateDashboardStats()
+                        ]).then(() => {
+                            hideProcessingButton(button);
+                        });
                     } else {
                         showNotification(data.message, 'danger');
+                        hideProcessingButton(button);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     showNotification('Error deleting contact', 'danger');
+                    hideProcessingButton(button);
                 });
             }
         }
         
         function markAllRead() {
             if (confirm('Mark all unread contacts as read?')) {
+                const button = event.target;
+                showProcessingButton(button, 'Marking as read...');
+                
                 fetch('api/admin-crud.php', {
                     method: 'POST',
                     headers: {
@@ -1130,15 +1215,22 @@ if ($isLoggedIn) {
                 .then(data => {
                     if (data.success) {
                         showNotification(data.message, 'success');
-                        loadContactsData(); // Refresh the contacts list
-                        updateDashboardStats(); // Update stats
+                        // Refresh both contacts and dashboard immediately
+                        Promise.all([
+                            loadContactsData(),
+                            updateDashboardStats()
+                        ]).then(() => {
+                            hideProcessingButton(button);
+                        });
                     } else {
                         showNotification(data.message, 'danger');
+                        hideProcessingButton(button);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     showNotification('Error marking all contacts as read', 'danger');
+                    hideProcessingButton(button);
                 });
             }
         }
@@ -1209,7 +1301,165 @@ if ($isLoggedIn) {
         }
         
         function editTestimonial(testimonialId) {
-            showNotification('Edit testimonial feature - coming soon', 'info');
+            // Get testimonial data first
+            fetch('api/admin-crud.php?action=get_testimonials')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const testimonial = data.data.find(t => t.id == testimonialId);
+                    if (testimonial) {
+                        showTestimonialModal(testimonial, true);
+                    } else {
+                        showNotification('Testimonial not found', 'danger');
+                    }
+                } else {
+                    showNotification('Error loading testimonial details', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error loading testimonial details', 'danger');
+            });
+        }
+
+        function addNewTestimonial() {
+            showTestimonialModal(null, false);
+        }
+
+        function showTestimonialModal(testimonial = null, isEdit = false) {
+            const isEditing = isEdit && testimonial;
+            const modalTitle = isEditing ? 'Edit Testimonial' : 'Add New Testimonial';
+            const submitText = isEditing ? 'Update Testimonial' : 'Add Testimonial';
+            
+            const modalContent = `
+                <div class="modal fade" id="testimonialModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">${modalTitle}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="testimonialForm">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="testimonialName" class="form-label">Name *</label>
+                                                <input type="text" class="form-control" id="testimonialName" name="name" value="${testimonial?.name || ''}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="testimonialEmail" class="form-label">Email</label>
+                                                <input type="email" class="form-control" id="testimonialEmail" name="email" value="${testimonial?.email || ''}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="testimonialCompany" class="form-label">Company</label>
+                                                <input type="text" class="form-control" id="testimonialCompany" name="company" value="${testimonial?.company || ''}">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="testimonialPosition" class="form-label">Position</label>
+                                                <input type="text" class="form-control" id="testimonialPosition" name="position" value="${testimonial?.position || ''}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="testimonialRating" class="form-label">Rating</label>
+                                                <select class="form-select" id="testimonialRating" name="rating">
+                                                    <option value="1" ${testimonial?.rating == 1 ? 'selected' : ''}>1 Star</option>
+                                                    <option value="2" ${testimonial?.rating == 2 ? 'selected' : ''}>2 Stars</option>
+                                                    <option value="3" ${testimonial?.rating == 3 ? 'selected' : ''}>3 Stars</option>
+                                                    <option value="4" ${testimonial?.rating == 4 ? 'selected' : ''}>4 Stars</option>
+                                                    <option value="5" ${testimonial?.rating == 5 || !testimonial ? 'selected' : ''}>5 Stars</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="testimonialActive" name="is_active" ${testimonial?.is_active || !testimonial ? 'checked' : ''}>
+                                                    <label class="form-check-label" for="testimonialActive">Active</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="testimonialFeatured" name="is_featured" ${testimonial?.is_featured ? 'checked' : ''}>
+                                                    <label class="form-check-label" for="testimonialFeatured">Featured</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="testimonialText" class="form-label">Testimonial *</label>
+                                        <textarea class="form-control" id="testimonialText" name="testimonial" rows="4" required>${testimonial?.testimonial || ''}</textarea>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="saveTestimonial(${isEditing ? testimonial.id : 'null'})">${submitText}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('testimonialModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalContent);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('testimonialModal'));
+            modal.show();
+        }
+
+        function saveTestimonial(testimonialId = null) {
+            const form = document.getElementById('testimonialForm');
+            const formData = new FormData(form);
+            
+            // Convert form data to URL encoded string
+            const data = new URLSearchParams();
+            data.append('action', testimonialId ? 'update_testimonial' : 'add_testimonial');
+            
+            if (testimonialId) {
+                data.append('testimonial_id', testimonialId);
+            }
+            
+            data.append('name', formData.get('name'));
+            data.append('email', formData.get('email') || '');
+            data.append('company', formData.get('company') || '');
+            data.append('position', formData.get('position') || '');
+            data.append('testimonial', formData.get('testimonial'));
+            data.append('rating', formData.get('rating'));
+            data.append('is_active', document.getElementById('testimonialActive').checked ? 1 : 0);
+            data.append('is_featured', document.getElementById('testimonialFeatured').checked ? 1 : 0);
+            
+            const submitButton = event.target;
+            showProcessingButton(submitButton, testimonialId ? 'Updating...' : 'Adding...');
+            
+            fetch('api/admin-crud.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: data.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('testimonialModal')).hide();
+                    loadTestimonialsData(); // Refresh the list
+                    updateDashboardStats(); // Update stats
+                } else {
+                    showNotification(data.message, 'danger');
+                }
+                hideProcessingButton(submitButton);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error saving testimonial', 'danger');
+                hideProcessingButton(submitButton);
+            });
         }
         
         function toggleTestimonialStatus(testimonialId) {
@@ -1265,6 +1515,9 @@ if ($isLoggedIn) {
 
         function activateAllTestimonials() {
             if (confirm('Activate all testimonials?')) {
+                const button = event.target;
+                showProcessingButton(button, 'Activating...');
+                
                 fetch('api/admin-crud.php', {
                     method: 'POST',
                     headers: {
@@ -1277,19 +1530,25 @@ if ($isLoggedIn) {
                     if (data.success) {
                         showNotification(data.message, 'success');
                         loadTestimonialsData(); // Refresh the testimonials list
+                        hideProcessingButton(button);
                     } else {
                         showNotification(data.message, 'danger');
+                        hideProcessingButton(button);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     showNotification('Error activating all testimonials', 'danger');
+                    hideProcessingButton(button);
                 });
             }
         }
 
         function deactivateAllTestimonials() {
             if (confirm('Deactivate all testimonials?')) {
+                const button = event.target;
+                showProcessingButton(button, 'Deactivating...');
+                
                 fetch('api/admin-crud.php', {
                     method: 'POST',
                     headers: {
@@ -1302,13 +1561,16 @@ if ($isLoggedIn) {
                     if (data.success) {
                         showNotification(data.message, 'success');
                         loadTestimonialsData(); // Refresh the testimonials list
+                        hideProcessingButton(button);
                     } else {
                         showNotification(data.message, 'danger');
+                        hideProcessingButton(button);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     showNotification('Error deactivating all testimonials', 'danger');
+                    hideProcessingButton(button);
                 });
             }
         }
