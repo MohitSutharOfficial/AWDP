@@ -1,0 +1,7 @@
+#!/bin/bash
+echo "Starting TechCorp Application..."
+echo "PHP Version: $(php --version)"
+echo "Working Directory: $(pwd)"
+echo "Files: $(ls -la)"
+echo "Port: $PORT"
+php -S 0.0.0.0:$PORT -t . index.php

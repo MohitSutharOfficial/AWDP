@@ -2,29 +2,46 @@
 // Railway-compatible entry point for TechCorp Solutions
 // Clean and simple routing for PHP application
 
-$request = $_SERVER['REQUEST_URI'];
+// Error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+$request = $_SERVER['REQUEST_URI'] ?? '/';
 $path = parse_url($request, PHP_URL_PATH);
 $path = ltrim($path, '/');
 
 // Handle routing for Railway
-switch($path) {
-    case '':
-    case 'index':
-    case 'index.html':
-    case 'home':
-        // Serve dynamic homepage
-        include 'home.php';
-        break;
-        
-    case 'admin':
-        // Include admin panel
-        include 'admin.php';
-        break;
-        
-    case 'contact':
-        // Include contact form
-        include 'contact.php';
-        break;
+try {
+    switch($path) {
+        case '':
+        case 'index':
+        case 'index.html':
+        case 'home':
+            // Serve dynamic homepage
+            if (file_exists('home.php')) {
+                include 'home.php';
+            } else {
+                include 'welcome.php';
+            }
+            break;
+            
+        case 'admin':
+            // Include admin panel
+            if (file_exists('admin.php')) {
+                include 'admin.php';
+            } else {
+                echo "<h1>Admin panel not found</h1>";
+            }
+            break;
+            
+        case 'contact':
+            // Include contact form
+            if (file_exists('contact.php')) {
+                include 'contact.php';
+            } else {
+                echo "<h1>Contact page not found</h1>";
+            }
+            break;
         
     case 'testimonials':
         // Include testimonials page
