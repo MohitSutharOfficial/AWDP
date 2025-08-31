@@ -1349,7 +1349,193 @@ if ($isLoggedIn) {
         
         function loadDatabaseData() {
             console.log('Loading database data...');
-            // Database tab logic here
+            
+            // Check if we're on database tab and load content
+            const databaseTab = document.getElementById('database');
+            if (databaseTab && databaseTab.classList.contains('active')) {
+                // Add loading indicator
+                databaseTab.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h5>Loading database information...</h5>
+                    </div>
+                `;
+                
+                // Load database stats
+                fetch('api/admin-crud.php?action=get_stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            renderDatabaseTab(data.data);
+                        } else {
+                            renderDatabaseError('Failed to load database information: ' + (data.message || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading database data:', error);
+                        renderDatabaseError('Error loading database information: ' + error.message);
+                    });
+            }
+        }
+        
+        function renderDatabaseTab(stats) {
+            const databaseTab = document.getElementById('database');
+            if (!databaseTab) return;
+            
+            databaseTab.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Database Management</h2>
+                    <button class="btn btn-primary" onclick="loadDatabaseData()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="data-table p-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-database me-2 text-primary"></i>
+                                Database Operations
+                            </h5>
+                            <p class="text-muted mb-4">Manage your database tables and monitor connection status.</p>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-plus-circle text-success me-2"></i>
+                                                Create Tables
+                                            </h6>
+                                            <p class="card-text">Initialize all required database tables with sample data.</p>
+                                            <a href="admin.php?action=create_tables" class="btn btn-success">
+                                                <i class="fas fa-database me-2"></i>Create Tables
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-info-circle text-info me-2"></i>
+                                                Connection Status
+                                            </h6>
+                                            <p class="card-text">Current database connection information.</p>
+                                            <div id="connectionStatus">
+                                                <div class="text-success">
+                                                    <i class="fas fa-check-circle me-2"></i>Connected
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="data-table p-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-chart-bar me-2 text-info"></i>
+                                Database Statistics
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Total Contacts</span>
+                                    <span class="badge bg-primary">${stats.total_contacts || 0}</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-primary" style="width: ${Math.min(100, ((stats.total_contacts || 0) / 100) * 100)}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>New Contacts</span>
+                                    <span class="badge bg-warning">${stats.new_contacts || 0}</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-warning" style="width: ${stats.total_contacts > 0 ? ((stats.new_contacts || 0) / stats.total_contacts) * 100 : 0}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Testimonials</span>
+                                    <span class="badge bg-success">${stats.total_testimonials || 0}</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width: ${Math.min(100, ((stats.total_testimonials || 0) / 50) * 100)}%"></div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="mb-3">
+                                <h6 class="text-muted">Database Type</h6>
+                                <span class="badge bg-info">PostgreSQL</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="text-muted">Connection Type</h6>
+                                <span class="badge bg-secondary">Supabase</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-4">
+                    <h6><i class="fas fa-info-circle me-2"></i>Database Configuration</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Current Environment:</strong> Production</p>
+                            <p class="mb-2"><strong>Fallback Chain:</strong></p>
+                            <ol class="mb-0">
+                                <li>Railway Database URL</li>
+                                <li>Supabase Transaction Pooler</li>
+                                <li>SQLite (Local fallback)</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Features:</strong></p>
+                            <ul class="mb-0">
+                                <li>IPv4/IPv6 Compatible</li>
+                                <li>Auto-connection fallback</li>
+                                <li>Real-time monitoring</li>
+                                <li>Error logging</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderDatabaseError(errorMessage) {
+            const databaseTab = document.getElementById('database');
+            if (!databaseTab) return;
+            
+            databaseTab.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Database Management</h2>
+                    <button class="btn btn-primary" onclick="loadDatabaseData()">
+                        <i class="fas fa-sync-alt me-2"></i>Retry
+                    </button>
+                </div>
+                
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <h5>Failed to load database information</h5>
+                    <p class="text-muted">${errorMessage}</p>
+                    <button class="btn btn-primary" onclick="loadDatabaseData()">
+                        <i class="fas fa-refresh me-2"></i>Retry
+                    </button>
+                </div>
+            `;
         }
         
         // Global variables
@@ -1365,6 +1551,7 @@ if ($isLoggedIn) {
             console.log('Found nav links on page load:', navLinks.length);
             
             initializeEventListeners();
+            bindTestimonialEvents();
             showNotifications();
             
             // Test API connectivity on page load
@@ -1648,7 +1835,70 @@ if ($isLoggedIn) {
             });
         }
         
-        // Contact management functions
+        // Contact management functions with real-time dashboard updates
+        // Central data loading functions
+        async function loadContactsData() {
+            showLoading();
+            try {
+                const response = await fetch('api/admin-crud.php?action=get_contacts');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.success) {
+                    dataCache.contacts = data.data || [];
+                    displayContacts(dataCache.contacts);
+                    return dataCache.contacts;
+                } else {
+                    throw new Error(data.message || 'Failed to load contacts');
+                }
+            } catch (error) {
+                console.error('Error loading contacts:', error);
+                showNotification('Error loading contacts: ' + error.message, 'error');
+                return [];
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function loadTestimonialsData() {
+            showLoading();
+            try {
+                const response = await fetch('api/admin-crud.php?action=get_testimonials');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.success) {
+                    dataCache.testimonials = data.data || [];
+                    renderTestimonialsTable(dataCache.testimonials);
+                    return dataCache.testimonials;
+                } else {
+                    throw new Error(data.message || 'Failed to load testimonials');
+                }
+            } catch (error) {
+                console.error('Error loading testimonials:', error);
+                showNotification('Error loading testimonials: ' + error.message, 'error');
+                return [];
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function loadDatabaseData() {
+            showLoading();
+            try {
+                await renderDatabaseTab();
+            } catch (error) {
+                console.error('Error loading database data:', error);
+                showNotification('Error loading database data: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
         function markAsRead(contactId) {
             // Show loading state
             showLoading();
@@ -1678,10 +1928,13 @@ if ($isLoggedIn) {
                         }
                     }
                     
+                    // REAL-TIME UPDATE: Refresh dashboard stats and yellow indicator
+                    updateDashboardStatsRealTime();
+                    updateNavigationIndicators();
+                    
                     // Invalidate cache and refresh data
                     dataCache.contacts = null;
                     refreshContacts(true);
-                    updateDashboardStats();
                 }
             }, function(error) {
                 // Error callback - always clear loading state
@@ -1714,10 +1967,14 @@ if ($isLoggedIn) {
                     
                     if (result.success) {
                         showNotification('Contact deleted successfully', 'success');
+                        
+                        // REAL-TIME UPDATE: Refresh dashboard stats and yellow indicator
+                        updateDashboardStatsRealTime();
+                        updateNavigationIndicators();
+                        
                         // Invalidate cache and refresh data
                         dataCache.contacts = null;
                         refreshContacts(true);
-                        updateDashboardStats();
                     } else {
                         showNotification(result.message || 'Error deleting contact', 'error');
                     }
@@ -1754,8 +2011,12 @@ if ($isLoggedIn) {
                     hideLoading();
                     if (data.success) {
                         showNotification(data.message || 'All contacts marked as read', 'success');
+                        
+                        // REAL-TIME UPDATE: Refresh dashboard stats and yellow indicator
+                        updateDashboardStatsRealTime();
+                        updateNavigationIndicators();
+                        
                         refreshContacts(); // Refresh the contacts list
-                        updateDashboardStats();
                     } else {
                         showNotification(data.message || 'Failed to mark all contacts as read', 'error');
                     }
@@ -2109,19 +2370,41 @@ if ($isLoggedIn) {
                         return response.json();
                     })
                     .then(data => {
+                        console.log('Testimonials API response:', data);
+                        
                         if (data.success) {
                             updateCache('testimonials', data.data);
                             renderTestimonialsTable(data.data);
                         } else {
-                            showNotification('Failed to load testimonials: ' + (data.message || 'Unknown error'), 'error');
+                            throw new Error('API returned success=false: ' + (data.message || 'Unknown error'));
                         }
                         table.classList.remove('loading');
                     })
                     .catch(error => {
                         console.error('Error refreshing testimonials:', error);
+                        
+                        // Show error in the testimonials tab
+                        const tbody = table.querySelector('tbody');
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="10" class="text-center py-5">
+                                    <div class="alert alert-danger d-inline-block">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Failed to load testimonials: ${error.message}
+                                        <br><br>
+                                        <button class="btn btn-primary btn-sm" onclick="refreshTestimonials(true)">
+                                            <i class="fas fa-redo me-1"></i>Retry
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                        
                         showNotification('Error loading testimonials: ' + error.message, 'error');
                         table.classList.remove('loading');
                     });
+            } else {
+                console.warn('Testimonials table not found - may not be on testimonials tab');
             }
         }
         
@@ -2135,62 +2418,78 @@ if ($isLoggedIn) {
             // Build all rows at once to prevent layout shifts
             let tableRows = '';
             
-            testimonials.forEach(testimonial => {
-                const statusBadge = testimonial.is_active ? 
-                    '<span class="badge bg-success">Active</span>' : 
-                    '<span class="badge bg-secondary">Inactive</span>';
-                
-                const featuredBadge = testimonial.is_featured ? 
-                    '<span class="badge bg-warning">Featured</span>' : 
-                    '<span class="badge bg-secondary">Regular</span>';
-                
-                const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
-                
-                // Format date
-                const dateFormatted = testimonial.created_at ? 
-                    new Date(testimonial.created_at).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                    }) : 'N/A';
-                
-                tableRows += `
-                    <tr data-id="${testimonial.id}">
-                        <td>${testimonial.id}</td>
-                        <td>${testimonial.name}</td>
-                        <td>${testimonial.company || 'N/A'}</td>
-                        <td>${testimonial.position || 'N/A'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="showTestimonial(${testimonial.id}, '${(testimonial.testimonial || '').replace(/'/g, "\\'")}')">
-                                <i class="fas fa-eye me-1"></i>View
+            if (testimonials && testimonials.length > 0) {
+                testimonials.forEach(testimonial => {
+                    const statusBadge = testimonial.is_active ? 
+                        '<span class="badge bg-success">Active</span>' : 
+                        '<span class="badge bg-secondary">Inactive</span>';
+                    
+                    const featuredBadge = testimonial.is_featured ? 
+                        '<span class="badge bg-warning">Featured</span>' : 
+                        '<span class="badge bg-secondary">Regular</span>';
+                    
+                    const stars = '★'.repeat(testimonial.rating || 5) + '☆'.repeat(5 - (testimonial.rating || 5));
+                    
+                    // Format date
+                    const dateFormatted = testimonial.created_at ? 
+                        new Date(testimonial.created_at).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        }) : 'N/A';
+                    
+                    tableRows += `
+                        <tr data-id="${testimonial.id}">
+                            <td>${testimonial.id}</td>
+                            <td>${testimonial.name || 'N/A'}</td>
+                            <td>${testimonial.company || 'N/A'}</td>
+                            <td>${testimonial.position || 'N/A'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="showTestimonial(${testimonial.id}, '${(testimonial.testimonial || '').replace(/'/g, "\\'")}')">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </button>
+                            </td>
+                            <td class="text-warning">${stars}</td>
+                            <td>${featuredBadge}</td>
+                            <td>${statusBadge}</td>
+                            <td>${dateFormatted}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-primary btn-sm me-1" onclick="viewTestimonial(${testimonial.id})" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-warning btn-sm me-1" onclick="editTestimonial(${testimonial.id})" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button id="delete-testimonial-${testimonial.id}" class="btn btn-danger btn-sm" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tableRows = `
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            No testimonials found
+                            <br><br>
+                            <button class="btn btn-success" onclick="showAddTestimonialModal()">
+                                <i class="fas fa-plus me-2"></i>Add First Testimonial
                             </button>
-                        </td>
-                        <td class="text-warning">${stars}</td>
-                        <td>${featuredBadge}</td>
-                        <td>${statusBadge}</td>
-                        <td>${dateFormatted}</td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-primary btn-sm me-1" onclick="viewTestimonial(${testimonial.id})" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-warning btn-sm me-1" onclick="editTestimonial(${testimonial.id})" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button id="delete-testimonial-${testimonial.id}" class="btn btn-danger btn-sm" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
                         </td>
                     </tr>
                 `;
-            });
+            }
             
             // Set all rows at once to prevent UI jumps
             tbody.innerHTML = tableRows;
             
             // Restore scroll position
             window.scrollTo(0, scrollTop);
+            
+            console.log(`Rendered ${testimonials ? testimonials.length : 0} testimonials`);
         }
         
         function updateDashboardStats() {
@@ -2211,17 +2510,120 @@ if ($isLoggedIn) {
                         if (activeTestimonialsEl) activeTestimonialsEl.textContent = data.data.active_testimonials || 0;
                         
                         // Update sidebar badge for new contacts
-                        const contactsBadge = document.querySelector('.admin-nav-link[data-tab="contacts"] .badge');
-                        if (contactsBadge && data.data.new_contacts > 0) {
-                            contactsBadge.textContent = data.data.new_contacts;
-                        } else if (contactsBadge && data.data.new_contacts === 0) {
-                            contactsBadge.remove();
-                        }
+                        updateNavigationIndicators(data.data);
                     }
                 })
                 .catch(error => {
                     console.error('Error updating dashboard stats:', error);
                 });
+        }
+        
+        // Real-time dashboard stats update
+        function updateDashboardStatsRealTime() {
+            console.log('Updating dashboard stats in real-time...');
+            
+            fetch('api/admin-crud.php?action=get_stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Real-time stats received:', data.data);
+                        
+                        // Update dashboard cards on all tabs
+                        updateDashboardCards(data.data);
+                        
+                        // Update navigation indicators
+                        updateNavigationIndicators(data.data);
+                        
+                        // Show subtle notification that stats were updated
+                        showCacheIndicator('Dashboard updated');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating real-time stats:', error);
+                });
+        }
+        
+        // Update dashboard cards with animation
+        function updateDashboardCards(stats) {
+            const cards = [
+                { selector: '.stat-widget:nth-child(1) .stat-number', value: stats.total_contacts || 0 },
+                { selector: '.stat-widget:nth-child(2) .stat-number', value: stats.new_contacts || 0 },
+                { selector: '.stat-widget:nth-child(3) .stat-number', value: stats.total_testimonials || 0 },
+                { selector: '.stat-widget:nth-child(4) .stat-number', value: '24/7' }
+            ];
+            
+            cards.forEach((card, index) => {
+                const element = document.querySelector(card.selector);
+                if (element && element.textContent != card.value) {
+                    // Add animation to highlight the change
+                    element.style.transition = 'all 0.3s ease';
+                    element.style.transform = 'scale(1.1)';
+                    element.style.color = '#28a745';
+                    
+                    setTimeout(() => {
+                        element.textContent = card.value;
+                        element.style.transform = 'scale(1)';
+                        element.style.color = '';
+                    }, 150);
+                }
+            });
+        }
+        
+        // Update navigation indicators (badges)
+        function updateNavigationIndicators(stats = null) {
+            if (!stats) {
+                // Fetch stats if not provided
+                fetch('api/admin-crud.php?action=get_stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateNavigationIndicators(data.data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching stats for navigation update:', error);
+                    });
+                return;
+            }
+            
+            console.log('Updating navigation indicators with stats:', stats);
+            
+            // Update contacts badge
+            const contactsLink = document.querySelector('.admin-nav-link[data-tab="contacts"]');
+            if (contactsLink) {
+                let badge = contactsLink.querySelector('.badge');
+                
+                if (stats.new_contacts > 0) {
+                    if (!badge) {
+                        // Create new badge
+                        badge = document.createElement('span');
+                        badge.className = 'badge bg-warning ms-2';
+                        contactsLink.appendChild(badge);
+                    }
+                    
+                    // Update badge with animation if value changed
+                    if (badge.textContent != stats.new_contacts) {
+                        badge.style.transition = 'all 0.3s ease';
+                        badge.style.transform = 'scale(1.3)';
+                        badge.textContent = stats.new_contacts;
+                        
+                        setTimeout(() => {
+                            badge.style.transform = 'scale(1)';
+                        }, 300);
+                    }
+                } else if (badge) {
+                    // Remove badge with animation
+                    badge.style.transition = 'all 0.3s ease';
+                    badge.style.transform = 'scale(0)';
+                    badge.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        if (badge.parentNode) {
+                            badge.remove();
+                        }
+                    }, 300);
+                }
+            }
         }
         
         // Notification system
@@ -2736,63 +3138,113 @@ if ($isLoggedIn) {
             });
         }
         
-        function updateTestimonial() {
-            const form = document.getElementById('editTestimonialForm');
-            const formData = new FormData(form);
-            formData.append('action', 'update_testimonial');
-            
-            // Show loading state
-            showLoading();
-            const submitBtn = form.querySelector('button[type="submit"]');
-            setButtonLoading('edit-testimonial-submit', true);
-            if (submitBtn) submitBtn.disabled = true;
-            
-            // Change 'id' to 'testimonial_id' for API compatibility
-            const id = formData.get('id');
-            formData.delete('id');
-            formData.append('testimonial_id', id);
-            
-            // Convert FormData to URLSearchParams
-            const params = new URLSearchParams();
-            for (let [key, value] of formData.entries()) {
-                params.append(key, value);
-            }
-            
-            fetch('api/admin-crud.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: params.toString()
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Hide loading state
-                hideLoading();
-                setButtonLoading('edit-testimonial-submit', false);
-                if (submitBtn) submitBtn.disabled = false;
-                
-                if (data.success) {
-                    showNotification('Testimonial updated successfully', 'success');
-                    
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editTestimonialModal'));
-                    modal.hide();
-                    
-                    // Auto-refresh testimonials data
-                    refreshTestimonials();
-                    updateDashboardStats();
-                } else {
-                    showNotification(data.message || 'Error updating testimonial', 'error');
+        function bindTestimonialEvents() {
+            // Bind click events for testimonial actions
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[onclick*="viewTestimonial"]')) {
+                    e.preventDefault();
+                    const match = e.target.getAttribute('onclick').match(/viewTestimonial\((\d+)\)/);
+                    if (match) {
+                        viewTestimonial(match[1]);
+                    }
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                hideLoading();
-                setButtonLoading('edit-testimonial-submit', false);
-                if (submitBtn) submitBtn.disabled = false;
-                showNotification('Error updating testimonial', 'error');
+                
+                if (e.target.matches('[onclick*="editTestimonial"]')) {
+                    e.preventDefault();
+                    const match = e.target.getAttribute('onclick').match(/editTestimonial\((\d+)\)/);
+                    if (match) {
+                        editTestimonial(match[1]);
+                    }
+                }
+                
+                if (e.target.matches('[onclick*="deleteTestimonial"]')) {
+                    e.preventDefault();
+                    const match = e.target.getAttribute('onclick').match(/deleteTestimonial\((\d+)\)/);
+                    if (match) {
+                        deleteTestimonial(match[1]);
+                    }
+                }
             });
+        }
+
+        // Add missing testimonial functions
+        function viewTestimonial(testimonialId) {
+            // Use the existing showTestimonial function for compatibility
+            if (typeof showTestimonial === 'function') {
+                // Try to get testimonial from cache first
+                if (dataCache.testimonials) {
+                    const testimonial = dataCache.testimonials.find(t => t.id == testimonialId);
+                    if (testimonial) {
+                        showTestimonial(testimonialId, testimonial.testimonial);
+                        return;
+                    }
+                }
+                
+                // Fallback to API
+                fetch(`api/admin-crud.php?action=get_testimonial&id=${testimonialId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            showTestimonial(testimonialId, data.data.testimonial);
+                        } else {
+                            showNotification('Error loading testimonial details', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Error loading testimonial details', 'error');
+                    });
+            }
+        }
+        
+        function editTestimonial(testimonialId) {
+            // Show edit modal (placeholder - can be implemented later)
+            showNotification('Edit testimonial feature coming soon', 'info');
+        }
+        
+        function deleteTestimonial(testimonialId) {
+            if (confirm('Are you sure you want to delete this testimonial?')) {
+                // Show loading state
+                showLoading();
+                setButtonLoading(`delete-testimonial-${testimonialId}`, true);
+                
+                fetch('api/admin-crud.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=delete_testimonial&testimonial_id=${testimonialId}`
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading();
+                    setButtonLoading(`delete-testimonial-${testimonialId}`, false);
+                    
+                    if (data.success) {
+                        showNotification('Testimonial deleted successfully', 'success');
+                        
+                        // REAL-TIME UPDATE: Refresh dashboard stats
+                        updateDashboardStatsRealTime();
+                        
+                        // Invalidate cache and refresh data
+                        dataCache.testimonials = null;
+                        refreshTestimonials(true);
+                    } else {
+                        showNotification(data.message || 'Error deleting testimonial', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    hideLoading();
+                    setButtonLoading(`delete-testimonial-${testimonialId}`, false);
+                    showNotification('Error deleting testimonial: ' + error.message, 'error');
+                });
+            }
         }
         
         // Mobile sidebar functionality
