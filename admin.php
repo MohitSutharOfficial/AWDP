@@ -457,6 +457,66 @@ if ($isLoggedIn) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // ===== IMMEDIATE GLOBAL FUNCTION DECLARATION =====
+        // Define showTab immediately to ensure it's available for onclick handlers
+        function showTab(tabName) {
+            console.log('showTab called with:', tabName);
+            
+            try {
+                // Hide all tabs
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Remove active class from all nav links
+                document.querySelectorAll('.admin-nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                // Show selected tab
+                const selectedTab = document.getElementById(tabName);
+                if (selectedTab) {
+                    selectedTab.classList.add('active');
+                }
+                
+                // Add active class to clicked nav link
+                const selectedLink = document.querySelector(`[data-tab="${tabName}"]`);
+                if (selectedLink) {
+                    selectedLink.classList.add('active');
+                }
+                
+                // Load data for specific tabs only if not already cached
+                setTimeout(() => {
+                    if (tabName === 'contacts') {
+                        if (typeof loadContactsData === 'function') {
+                            if (!dataCache.contacts || dataCache.contacts.length === 0) {
+                                loadContactsData();
+                            } else {
+                                displayContacts(dataCache.contacts);
+                            }
+                        }
+                    } else if (tabName === 'testimonials') {
+                        if (typeof loadTestimonialsData === 'function') {
+                            if (!dataCache.testimonials || dataCache.testimonials.length === 0) {
+                                loadTestimonialsData();
+                            } else {
+                                displayTestimonials(dataCache.testimonials);
+                            }
+                        }
+                    } else if (tabName === 'database') {
+                        if (typeof loadDatabaseData === 'function') {
+                            loadDatabaseData();
+                        }
+                    }
+                }, 50);
+                
+                return false;
+            } catch (error) {
+                console.error('Error in showTab:', error);
+                return false;
+            }
+        }
+
         // ===== GLOBAL VARIABLES =====
         let dataCache = {
             contacts: null,
@@ -622,59 +682,6 @@ if ($isLoggedIn) {
                     notification.remove();
                 }
             }, 5000);
-        }
-
-        // ===== NAVIGATION FUNCTION =====
-        function showTab(tabName) {
-            console.log('Showing tab:', tabName);
-            
-            try {
-                // Hide all tabs
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                
-                // Remove active class from all nav links
-                document.querySelectorAll('.admin-nav-link').forEach(link => {
-                    link.classList.remove('active');
-                });
-                
-                // Show selected tab
-                const selectedTab = document.getElementById(tabName);
-                if (selectedTab) {
-                    selectedTab.classList.add('active');
-                }
-                
-                // Add active class to clicked nav link
-                const selectedLink = document.querySelector(`[data-tab="${tabName}"]`);
-                if (selectedLink) {
-                    selectedLink.classList.add('active');
-                }
-                
-                // Load data for specific tabs only if not already cached
-                setTimeout(() => {
-                    if (tabName === 'contacts') {
-                        if (!dataCache.contacts || dataCache.contacts.length === 0) {
-                            loadContactsData();
-                        } else {
-                            displayContacts(dataCache.contacts);
-                        }
-                    } else if (tabName === 'testimonials') {
-                        if (!dataCache.testimonials || dataCache.testimonials.length === 0) {
-                            loadTestimonialsData();
-                        } else {
-                            displayTestimonials(dataCache.testimonials);
-                        }
-                    } else if (tabName === 'database') {
-                        loadDatabaseData();
-                    }
-                }, 50); // Reduced timeout for faster switching
-                
-                return false;
-            } catch (error) {
-                console.error('Error in showTab:', error);
-                return false;
-            }
         }
 
         // ===== DATA LOADING FUNCTIONS =====
@@ -1682,7 +1689,6 @@ if ($isLoggedIn) {
 
         // ===== GLOBAL FUNCTION EXPORTS =====
         // Ensure all functions called from onclick handlers are globally accessible
-        window.showTab = showTab;
         window.refreshDashboard = refreshDashboard;
         window.markAllRead = markAllRead;
         window.refreshContacts = refreshContacts;
