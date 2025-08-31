@@ -1183,9 +1183,309 @@ if ($isLoggedIn) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Declare showTab function FIRST before any other code
+        // ===== GLOBAL VARIABLES =====
+        let dataCache = {
+            contacts: null,
+            testimonials: null,
+            stats: null
+        };
+        
+        // ===== UTILITY FUNCTIONS =====
+        function showLoading() {
+            const existingLoader = document.querySelector('.loading-overlay');
+            if (existingLoader) return;
+            
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+                backdrop-filter: blur(2px);
+            `;
+            
+            loadingOverlay.innerHTML = `
+                <div class="d-flex flex-column align-items-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="text-primary">Loading...</div>
+                </div>
+            `;
+            
+            document.body.appendChild(loadingOverlay);
+        }
+        
+        function hideLoading() {
+            const loadingOverlay = document.querySelector('.loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.remove();
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            const existingNotifications = document.querySelectorAll('.notification-toast');
+            existingNotifications.forEach(notification => notification.remove());
+            
+            // Create new notification
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show notification-toast`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                min-width: 300px;
+                max-width: 500px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            notification.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                    <div>${message}</div>
+                    <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        function setButtonLoading(buttonId, loading) {
+            const button = document.getElementById(buttonId);
+            if (!button) return;
+            
+            if (loading) {
+                button.disabled = true;
+                button.dataset.originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+            } else {
+                button.disabled = false;
+                if (button.dataset.originalText) {
+                    button.innerHTML = button.dataset.originalText;
+                    delete button.dataset.originalText;
+                }
+            }
+        }
+        
+        // ===== CORE DATA LOADING FUNCTIONS =====
+        async function loadContactsData() {
+            console.log('📞 Loading contacts data...');
+            try {
+                const response = await fetch('api/admin-crud.php?action=get_contacts');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Contacts API response:', data);
+                
+                if (data.success) {
+                    dataCache.contacts = data.data || [];
+                    displayContacts(dataCache.contacts);
+                    console.log('✅ Contacts loaded successfully:', dataCache.contacts.length);
+                    return dataCache.contacts;
+                } else {
+                    throw new Error(data.message || 'Failed to load contacts');
+                }
+            } catch (error) {
+                console.error('❌ Error loading contacts:', error);
+                showNotification('Error loading contacts: ' + error.message, 'danger');
+                
+                // Display empty state
+                const tableBody = document.querySelector('#contactsTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading contacts: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                }
+                return [];
+            }
+        }
+        
+        async function loadTestimonialsData() {
+            console.log('⭐ Loading testimonials data...');
+            try {
+                const response = await fetch('api/admin-crud.php?action=get_testimonials');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Testimonials API response:', data);
+                
+                if (data.success) {
+                    dataCache.testimonials = data.data || [];
+                    renderTestimonialsTable(dataCache.testimonials);
+                    console.log('✅ Testimonials loaded successfully:', dataCache.testimonials.length);
+                    return dataCache.testimonials;
+                } else {
+                    throw new Error(data.message || 'Failed to load testimonials');
+                }
+            } catch (error) {
+                console.error('❌ Error loading testimonials:', error);
+                showNotification('Error loading testimonials: ' + error.message, 'danger');
+                
+                // Display empty state
+                const tableBody = document.querySelector('#testimonialsTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading testimonials: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                }
+                return [];
+            }
+        }
+        
+        async function loadDatabaseData() {
+            console.log('🗄️ Loading database data...');
+            try {
+                // First get the stats
+                const response = await fetch('api/admin-crud.php?action=get_stats');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    await renderDatabaseTab(data.data);
+                    console.log('✅ Database data loaded successfully');
+                } else {
+                    throw new Error(data.message || 'Failed to load stats for database');
+                }
+            } catch (error) {
+                console.error('❌ Error loading database data:', error);
+                showNotification('Error loading database data: ' + error.message, 'danger');
+                
+                // Display error state
+                const databaseTab = document.querySelector('#database');
+                if (databaseTab) {
+                    databaseTab.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>Database Management</h2>
+                            <button class="btn btn-primary" onclick="loadDatabaseData()">
+                                <i class="fas fa-sync-alt me-2"></i>Refresh
+                            </button>
+                        </div>
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-exclamation-triangle mb-3" style="font-size: 2rem;"></i>
+                            <h5>Error Loading Database Data</h5>
+                            <p>${error.message}</p>
+                            <button class="btn btn-primary" onclick="loadDatabaseData()">
+                                <i class="fas fa-redo me-2"></i>Try Again
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // ===== DISPLAY FUNCTIONS =====
+        function displayContacts(contacts) {
+            console.log('Displaying contacts:', contacts.length);
+            const tableBody = document.querySelector('#contactsTable tbody');
+            if (!tableBody) {
+                console.error('Contacts table body not found');
+                return;
+            }
+            
+            if (!contacts || contacts.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox me-2"></i>
+                            No contact submissions found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let tableRows = '';
+            contacts.forEach(contact => {
+                const statusBadge = contact.status === 'new' ? 'warning' : 
+                                  contact.status === 'read' ? 'info' : 'success';
+                
+                const dateFormatted = contact.created_at ? 
+                    new Date(contact.created_at).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : 'N/A';
+                
+                tableRows += `
+                    <tr data-id="${contact.id}">
+                        <td>${contact.id}</td>
+                        <td>${contact.name || 'N/A'}</td>
+                        <td>
+                            <a href="mailto:${contact.email}" class="text-decoration-none">
+                                ${contact.email}
+                            </a>
+                        </td>
+                        <td>
+                            ${contact.phone ? `<a href="tel:${contact.phone}" class="text-decoration-none">${contact.phone}</a>` : '-'}
+                        </td>
+                        <td>${contact.company || '-'}</td>
+                        <td>${contact.subject || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showMessage(${contact.id}, '${(contact.message || '').replace(/'/g, "\\'")}')">
+                                <i class="fas fa-eye me-1"></i>View
+                            </button>
+                        </td>
+                        <td>${dateFormatted}</td>
+                        <td>
+                            <span class="badge bg-${statusBadge}">
+                                ${contact.status ? contact.status.charAt(0).toUpperCase() + contact.status.slice(1) : 'Unknown'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                ${contact.status === 'new' ? `
+                                    <button id="mark-read-${contact.id}" class="btn btn-success" onclick="markAsRead(${contact.id})" title="Mark as Read">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                ` : ''}
+                                <button id="delete-contact-${contact.id}" class="btn btn-danger" onclick="deleteContact(${contact.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableRows;
+        }
+        
+        // ===== NAVIGATION FUNCTION =====
         function showTab(tabName) {
-            console.log('showTab called with:', tabName);
             
             try {
                 // Hide all tab content
@@ -1538,10 +1838,348 @@ if ($isLoggedIn) {
             `;
         }
         
-        // Global variables
-        let currentTab = 'dashboard';
         
-        // ===== INITIALIZATION AND TESTING =====
+        // ===== REFRESH FUNCTIONS (No search/filters - just refresh buttons) =====
+        async function refreshContacts() {
+            console.log('🔄 Refreshing contacts...');
+            showLoading();
+            
+            try {
+                // Clear cache to force fresh data
+                dataCache.contacts = null;
+                
+                // Load fresh data
+                await loadContactsData();
+                
+                // Update dashboard stats in real-time
+                await updateDashboardStatsRealTime();
+                
+                showNotification('Contacts refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Error refreshing contacts:', error);
+                showNotification('Error refreshing contacts: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function refreshTestimonials() {
+            console.log('🔄 Refreshing testimonials...');
+            showLoading();
+            
+            try {
+                // Clear cache to force fresh data
+                dataCache.testimonials = null;
+                
+                // Load fresh data
+                await loadTestimonialsData();
+                
+                // Update dashboard stats in real-time
+                await updateDashboardStatsRealTime();
+                
+                showNotification('Testimonials refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Error refreshing testimonials:', error);
+                showNotification('Error refreshing testimonials: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function refreshDashboard() {
+            console.log('🔄 Refreshing dashboard...');
+            showLoading();
+            
+            try {
+                // Clear all caches
+                dataCache.stats = null;
+                dataCache.contacts = null;
+                dataCache.testimonials = null;
+                
+                // Update dashboard stats
+                await updateDashboardStatsRealTime();
+                
+                showNotification('Dashboard refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Error refreshing dashboard:', error);
+                showNotification('Error refreshing dashboard: ' + error.message, 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        
+        // ===== TESTIMONIAL FUNCTIONS =====
+        function bindTestimonialEvents() {
+            console.log('🔗 Binding testimonial events...');
+            // Event delegation for testimonial actions
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[onclick*="viewTestimonial"]')) {
+                    e.preventDefault();
+                    const match = e.target.getAttribute('onclick').match(/viewTestimonial\((\d+)\)/);
+                    if (match) {
+                        viewTestimonial(match[1]);
+                    }
+                }
+                
+                if (e.target.matches('[onclick*="editTestimonial"]')) {
+                    e.preventDefault();
+                    const match = e.target.getAttribute('onclick').match(/editTestimonial\((\d+)\)/);
+                    if (match) {
+                        editTestimonial(match[1]);
+                    }
+                }
+                
+                if (e.target.matches('[onclick*="deleteTestimonial"]')) {
+                    e.preventDefault();
+                    const match = e.target.getAttribute('onclick').match(/deleteTestimonial\((\d+)\)/);
+                    if (match) {
+                        deleteTestimonial(match[1]);
+                    }
+                }
+            });
+        }
+        
+        function renderTestimonialsTable(testimonials) {
+            console.log('📋 Rendering testimonials table:', testimonials.length);
+            const tableBody = document.querySelector('#testimonialsTable tbody');
+            if (!tableBody) {
+                console.error('Testimonials table body not found');
+                return;
+            }
+            
+            if (!testimonials || testimonials.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-star me-2"></i>
+                            No testimonials found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let tableRows = '';
+            testimonials.forEach(testimonial => {
+                const statusBadge = testimonial.is_active ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                const featuredBadge = testimonial.is_featured ? 
+                    '<span class="badge bg-warning">Featured</span>' : 
+                    '<span class="badge bg-secondary">Regular</span>';
+                
+                const stars = '★'.repeat(testimonial.rating || 5) + '☆'.repeat(5 - (testimonial.rating || 5));
+                
+                // Format date
+                const dateFormatted = testimonial.created_at ? 
+                    new Date(testimonial.created_at).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    }) : 'N/A';
+                
+                tableRows += `
+                    <tr data-id="${testimonial.id}">
+                        <td>${testimonial.id}</td>
+                        <td>${testimonial.name || 'N/A'}</td>
+                        <td>${testimonial.company || 'N/A'}</td>
+                        <td>${testimonial.position || 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showTestimonial(${testimonial.id}, '${(testimonial.testimonial || '').replace(/'/g, "\\'")}')">
+                                <i class="fas fa-eye me-1"></i>View
+                            </button>
+                        </td>
+                        <td><span class="text-warning">${stars}</span></td>
+                        <td>${featuredBadge}</td>
+                        <td>${statusBadge}</td>
+                        <td>${dateFormatted}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-info" onclick="viewTestimonial(${testimonial.id})" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-warning" onclick="editTestimonial(${testimonial.id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button id="delete-testimonial-${testimonial.id}" class="btn btn-danger" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableRows;
+        }
+        
+        function viewTestimonial(testimonialId) {
+            console.log('👁️ Viewing testimonial:', testimonialId);
+            // Implementation for viewing testimonial
+            showNotification('View testimonial feature - coming soon', 'info');
+        }
+        
+        function editTestimonial(testimonialId) {
+            console.log('✏️ Editing testimonial:', testimonialId);
+            // Implementation for editing testimonial
+            showNotification('Edit testimonial feature - coming soon', 'info');
+        }
+        
+        function deleteTestimonial(testimonialId) {
+            if (confirm('Are you sure you want to delete this testimonial?')) {
+                console.log('🗑️ Deleting testimonial:', testimonialId);
+                showNotification('Delete testimonial feature - coming soon', 'info');
+            }
+        }
+        
+        // ===== DATABASE FUNCTIONS =====
+        function renderDatabaseTab(stats) {
+            console.log('🗄️ Rendering database tab with stats:', stats);
+            const databaseTab = document.getElementById('database');
+            if (!databaseTab) return;
+            
+            databaseTab.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Database Management</h2>
+                    <button class="btn btn-primary" onclick="loadDatabaseData()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="data-table p-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-database me-2 text-primary"></i>
+                                Database Statistics
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <h3 class="text-success">${stats.total_contacts || 0}</h3>
+                                            <p class="mb-0">Total Contacts</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-body text-center">
+                                            <h3 class="text-info">${stats.total_testimonials || 0}</h3>
+                                            <p class="mb-0">Total Testimonials</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <h3 class="text-warning">${stats.new_contacts || 0}</h3>
+                                            <p class="mb-0">New Contacts</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Database connection is active and working properly.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="data-table p-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-tools me-2 text-secondary"></i>
+                                Quick Actions
+                            </h5>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" onclick="loadDatabaseData()">
+                                    <i class="fas fa-sync-alt me-2"></i>Refresh Statistics
+                                </button>
+                                
+                                <button class="btn btn-outline-success" onclick="showNotification('Backup feature coming soon', 'info')">
+                                    <i class="fas fa-download me-2"></i>Backup Database
+                                </button>
+                                
+                                <button class="btn btn-outline-info" onclick="showNotification('Optimization feature coming soon', 'info')">
+                                    <i class="fas fa-rocket me-2"></i>Optimize Tables
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ===== REAL-TIME UPDATE FUNCTIONS =====
+        async function updateDashboardStatsRealTime() {
+            console.log('📊 Updating dashboard stats in real-time...');
+            
+            try {
+                const response = await fetch('api/admin-crud.php?action=get_stats');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log('✅ Real-time stats received:', data.data);
+                    
+                    // Update dashboard cards on all tabs
+                    updateDashboardCards(data.data);
+                    
+                    // Update navigation indicators
+                    updateNavigationIndicators(data.data);
+                    
+                    return data.data;
+                } else {
+                    throw new Error(data.message || 'Failed to get stats');
+                }
+            } catch (error) {
+                console.error('❌ Error updating real-time stats:', error);
+                return null;
+            }
+        }
+        
+        function updateDashboardCards(stats) {
+            // Update stat cards with animation
+            const statCards = [
+                { selector: '.stat-widget:nth-child(1) .stat-number', value: stats.total_contacts || 0 },
+                { selector: '.stat-widget:nth-child(2) .stat-number', value: stats.new_contacts || 0 },
+                { selector: '.stat-widget:nth-child(3) .stat-number', value: stats.total_testimonials || 0 }
+            ];
+            
+            statCards.forEach(card => {
+                const element = document.querySelector(card.selector);
+                if (element) {
+                    element.style.transform = 'scale(1.1)';
+                    element.textContent = card.value;
+                    setTimeout(() => {
+                        element.style.transform = 'scale(1)';
+                    }, 200);
+                }
+            });
+        }
+        
+        function updateNavigationIndicators(stats) {
+            // Update yellow badge indicators
+            const contactsBadge = document.querySelector('.admin-nav-link[data-tab="contacts"] .badge');
+            if (contactsBadge && stats.new_contacts) {
+                contactsBadge.textContent = stats.new_contacts;
+                contactsBadge.style.animation = 'pulse 0.5s';
+                setTimeout(() => {
+                    contactsBadge.style.animation = '';
+                }, 500);
+            }
+        }
+        
         function testAPIConnection() {
             console.log('Testing API connection...');
             fetch('api/admin-crud.php?action=test')
