@@ -157,7 +157,6 @@ try {
 
         case 'add_testimonial':
             $name = trim($_POST['name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
             $company = trim($_POST['company'] ?? '');
             $position = trim($_POST['position'] ?? '');
             $testimonial = trim($_POST['testimonial'] ?? '');
@@ -169,8 +168,8 @@ try {
                 $response = ['success' => false, 'message' => 'Name and testimonial are required'];
             } else {
                 $result = $db->execute(
-                    "INSERT INTO testimonials (name, email, company, position, testimonial, rating, is_active, is_featured, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                    [$name, $email, $company, $position, $testimonial, $rating, $is_active, $is_featured]
+                    "INSERT INTO testimonials (name, company, position, testimonial, rating, is_active, is_featured, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [$name, $company, $position, $testimonial, $rating, $is_active, $is_featured]
                 );
                 
                 if ($result) {
@@ -184,7 +183,6 @@ try {
         case 'update_testimonial':
             $testimonialId = intval($_POST['testimonial_id'] ?? 0);
             $name = trim($_POST['name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
             $company = trim($_POST['company'] ?? '');
             $position = trim($_POST['position'] ?? '');
             $testimonial = trim($_POST['testimonial'] ?? '');
@@ -198,8 +196,8 @@ try {
                 $response = ['success' => false, 'message' => 'Name and testimonial are required'];
             } else {
                 $result = $db->execute(
-                    "UPDATE testimonials SET name = ?, email = ?, company = ?, position = ?, testimonial = ?, rating = ?, is_active = ?, is_featured = ? WHERE id = ?",
-                    [$name, $email, $company, $position, $testimonial, $rating, $is_active, $is_featured, $testimonialId]
+                    "UPDATE testimonials SET name = ?, company = ?, position = ?, testimonial = ?, rating = ?, is_active = ?, is_featured = ? WHERE id = ?",
+                    [$name, $company, $position, $testimonial, $rating, $is_active, $is_featured, $testimonialId]
                 );
                 
                 if ($result) {

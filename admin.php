@@ -464,6 +464,72 @@ if ($isLoggedIn) {
             stats: null
         };
 
+        let loadingStates = {
+            contacts: false,
+            testimonials: false,
+            dashboard: false,
+            actions: new Set()
+        };
+
+        // ===== ACTIVITY INDICATOR SYSTEM =====
+        function showActivityIndicator() {
+            let indicator = document.getElementById('activityIndicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'activityIndicator';
+                indicator.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 10000;
+                    background: #007bff; color: white; padding: 10px 20px;
+                    border-radius: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    display: flex; align-items: center; font-size: 14px;
+                    animation: slideInRight 0.3s ease-out;
+                `;
+                indicator.innerHTML = `
+                    <div class="spinner-border spinner-border-sm me-2" role="status" style="width: 16px; height: 16px;"></div>
+                    <span>Processing...</span>
+                `;
+                document.body.appendChild(indicator);
+                
+                // Add CSS animation
+                if (!document.getElementById('activityStyles')) {
+                    const style = document.createElement('style');
+                    style.id = 'activityStyles';
+                    style.textContent = `
+                        @keyframes slideInRight {
+                            from { transform: translateX(100%); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                        @keyframes slideOutRight {
+                            from { transform: translateX(0); opacity: 1; }
+                            to { transform: translateX(100%); opacity: 0; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+            indicator.style.display = 'flex';
+        }
+
+        function hideActivityIndicator() {
+            const indicator = document.getElementById('activityIndicator');
+            if (indicator) {
+                indicator.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.style.display = 'none';
+                    }
+                }, 300);
+            }
+        }
+
+        function updateActivityIndicator(message = 'Processing...') {
+            const indicator = document.getElementById('activityIndicator');
+            if (indicator) {
+                const span = indicator.querySelector('span');
+                if (span) span.textContent = message;
+            }
+        }
+
         // ===== UTILITY FUNCTIONS =====
         function showLoading(message = 'Loading...') {
             const existingLoader = document.querySelector('.loading-overlay');
@@ -585,16 +651,24 @@ if ($isLoggedIn) {
                     selectedLink.classList.add('active');
                 }
                 
-                // Load data for specific tabs
+                // Load data for specific tabs only if not already cached
                 setTimeout(() => {
                     if (tabName === 'contacts') {
-                        loadContactsData();
+                        if (!dataCache.contacts || dataCache.contacts.length === 0) {
+                            loadContactsData();
+                        } else {
+                            displayContacts(dataCache.contacts);
+                        }
                     } else if (tabName === 'testimonials') {
-                        loadTestimonialsData();
+                        if (!dataCache.testimonials || dataCache.testimonials.length === 0) {
+                            loadTestimonialsData();
+                        } else {
+                            displayTestimonials(dataCache.testimonials);
+                        }
                     } else if (tabName === 'database') {
                         loadDatabaseData();
                     }
-                }, 100);
+                }, 50); // Reduced timeout for faster switching
                 
                 return false;
             } catch (error) {
@@ -606,6 +680,11 @@ if ($isLoggedIn) {
         // ===== DATA LOADING FUNCTIONS =====
         async function loadContactsData() {
             console.log('Loading contacts data...');
+            if (loadingStates.contacts) return; // Prevent duplicate calls
+            
+            loadingStates.contacts = true;
+            showActivityIndicator();
+            updateActivityIndicator('Loading contacts...');
             showTableLoading('#contactsTable', 'Loading contacts...');
             
             try {
@@ -638,11 +717,19 @@ if ($isLoggedIn) {
                     `;
                 }
                 return [];
+            } finally {
+                loadingStates.contacts = false;
+                hideActivityIndicator();
             }
         }
         
         async function loadTestimonialsData() {
             console.log('Loading testimonials data...');
+            if (loadingStates.testimonials) return; // Prevent duplicate calls
+            
+            loadingStates.testimonials = true;
+            showActivityIndicator();
+            updateActivityIndicator('Loading testimonials...');
             showTableLoading('#testimonialsTable', 'Loading testimonials...');
             
             try {
@@ -675,6 +762,11 @@ if ($isLoggedIn) {
                     `;
                 }
                 return [];
+            } finally {
+                loadingStates.testimonials = false;
+                hideActivityIndicator();
+            }
+        }
             }
         }
         
@@ -1202,7 +1294,12 @@ if ($isLoggedIn) {
         function markAllRead() {
             if (confirm('Mark all unread contacts as read?')) {
                 const button = event.target;
+                const actionId = 'mark_all_read_' + Date.now();
+                loadingStates.actions.add(actionId);
+                
                 showProcessingButton(button, 'Marking as read...');
+                showActivityIndicator();
+                updateActivityIndicator('Marking all contacts as read...');
                 
                 fetch('api/admin-crud.php', {
                     method: 'POST',
@@ -1215,22 +1312,35 @@ if ($isLoggedIn) {
                 .then(data => {
                     if (data.success) {
                         showNotification(data.message, 'success');
+                        updateActivityIndicator('Refreshing data...');
                         // Refresh both contacts and dashboard immediately
                         Promise.all([
                             loadContactsData(),
                             updateDashboardStats()
                         ]).then(() => {
                             hideProcessingButton(button);
+                            loadingStates.actions.delete(actionId);
+                            if (loadingStates.actions.size === 0) {
+                                hideActivityIndicator();
+                            }
                         });
                     } else {
                         showNotification(data.message, 'danger');
                         hideProcessingButton(button);
+                        loadingStates.actions.delete(actionId);
+                        if (loadingStates.actions.size === 0) {
+                            hideActivityIndicator();
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     showNotification('Error marking all contacts as read', 'danger');
                     hideProcessingButton(button);
+                    loadingStates.actions.delete(actionId);
+                    if (loadingStates.actions.size === 0) {
+                        hideActivityIndicator();
+                    }
                 });
             }
         }
@@ -1348,19 +1458,15 @@ if ($isLoggedIn) {
                                                 <input type="text" class="form-control" id="testimonialName" name="name" value="${testimonial?.name || ''}" required>
                                             </div>
                                             <div class="mb-3">
-                                                <label for="testimonialEmail" class="form-label">Email</label>
-                                                <input type="email" class="form-control" id="testimonialEmail" name="email" value="${testimonial?.email || ''}">
-                                            </div>
-                                            <div class="mb-3">
                                                 <label for="testimonialCompany" class="form-label">Company</label>
                                                 <input type="text" class="form-control" id="testimonialCompany" name="company" value="${testimonial?.company || ''}">
                                             </div>
-                                        </div>
-                                        <div class="col-md-6">
                                             <div class="mb-3">
                                                 <label for="testimonialPosition" class="form-label">Position</label>
                                                 <input type="text" class="form-control" id="testimonialPosition" name="position" value="${testimonial?.position || ''}">
                                             </div>
+                                        </div>
+                                        <div class="col-md-6">
                                             <div class="mb-3">
                                                 <label for="testimonialRating" class="form-label">Rating</label>
                                                 <select class="form-select" id="testimonialRating" name="rating">
@@ -1425,7 +1531,6 @@ if ($isLoggedIn) {
             }
             
             data.append('name', formData.get('name'));
-            data.append('email', formData.get('email') || '');
             data.append('company', formData.get('company') || '');
             data.append('position', formData.get('position') || '');
             data.append('testimonial', formData.get('testimonial'));
