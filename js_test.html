@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>JavaScript Syntax Test</title>
+</head>
+
+<body>
+    <div id="test">Test</div>
+
+    <script>
+        console.log('Script starting...');
+
+        function showTab(tabName) {
+            console.log('showTab called with:', tabName);
+            return false;
+        }
+
+        function showNotification(message, type = 'info') {
+            const existingNotifications = document.querySelectorAll('.notification-toast');
+            existingNotifications.forEach(notification => notification.remove());
+
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show notification-toast`;
+            notification.style.cssText = `
+                position: fixed; top: 20px; right: 20px; z-index: 10000;
+                min-width: 300px; max-width: 500px;
+            `;
+
+            notification.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : (type === 'danger' ? 'exclamation-circle' : 'info-circle')} me-2"></i>
+                    <div>${message}</div>
+                    <button type="button" class="btn-close ms-auto" data-dismiss-notification="true"></button>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        console.log('Script loaded successfully');
+        showNotification('Test notification', 'info');
+    </script>
+</body>
+
+</html>
