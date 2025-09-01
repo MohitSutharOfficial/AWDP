@@ -44,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     // Simple authentication (use proper hashing in production)
     if ($username === 'admin' && $password === 'admin123') {
         $_SESSION['admin_logged_in'] = true;
-        header('Location: admin.php');
+        // Redirect to the admin route, not admin.php directly
+        header('Location: /admin');
         exit;
     } else {
         $loginError = 'Invalid credentials';
@@ -54,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 // Handle logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     session_destroy();
-    header('Location: admin.php');
+    header('Location: /admin');
     exit;
 }
 
@@ -270,7 +271,7 @@ if ($isLoggedIn) {
             <div id="dashboard" class="tab-content active">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Dashboard Overview</h2>
-                    <button class="btn btn-primary" onclick="refreshDashboard()">
+                    <button class="btn btn-primary" data-action="refresh-dashboard">
                         <i class="fas fa-sync-alt me-2"></i>Refresh
                     </button>
                 </div>
@@ -358,10 +359,10 @@ if ($isLoggedIn) {
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Contact Submissions</h2>
                     <div>
-                        <button class="btn btn-success me-2" onclick="markAllRead()">
+                        <button class="btn btn-success me-2" data-action="mark-all-read">
                             <i class="fas fa-check-double me-2"></i>Mark All Read
                         </button>
-                        <button class="btn btn-primary" onclick="refreshContacts()">
+                        <button class="btn btn-primary" data-action="refresh-contacts">
                             <i class="fas fa-sync-alt me-2"></i>Refresh
                         </button>
                     </div>
@@ -397,16 +398,16 @@ if ($isLoggedIn) {
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Client Testimonials</h2>
                     <div class="btn-group">
-                        <button class="btn btn-primary me-2" onclick="addNewTestimonial()">
+                        <button class="btn btn-primary me-2" data-action="add-new-testimonial">
                             <i class="fas fa-plus me-2"></i>Add New
                         </button>
-                        <button class="btn btn-success me-2" onclick="activateAllTestimonials()">
+                        <button class="btn btn-success me-2" data-action="activate-all-testimonials">
                             <i class="fas fa-toggle-on me-2"></i>Activate All
                         </button>
-                        <button class="btn btn-secondary me-2" onclick="deactivateAllTestimonials()">
+                        <button class="btn btn-secondary me-2" data-action="deactivate-all-testimonials">
                             <i class="fas fa-toggle-off me-2"></i>Deactivate All
                         </button>
-                        <button class="btn btn-primary" onclick="refreshTestimonials()">
+                        <button class="btn btn-primary" data-action="refresh-testimonials">
                             <i class="fas fa-sync-alt me-2"></i>Refresh
                         </button>
                     </div>
@@ -441,7 +442,7 @@ if ($isLoggedIn) {
             <div id="database" class="tab-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Database Management</h2>
-                    <button class="btn btn-primary" onclick="refreshDatabase()">
+                    <button class="btn btn-primary" data-action="refresh-database">
                         <i class="fas fa-sync-alt me-2"></i>Refresh
                     </button>
                 </div>
@@ -860,15 +861,15 @@ if ($isLoggedIn) {
                         <td><span class="badge bg-${statusBadge}">${contact.status ? contact.status.charAt(0).toUpperCase() + contact.status.slice(1) : 'Unknown'}</span></td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-info" onclick="viewContactDetails(${contact.id})" title="View Details">
+                                <button class="btn btn-info" data-action="view-details" data-contact-id="${contact.id}" title="View Details">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 ${contact.status === 'new' ? `
-                                    <button class="btn btn-success" onclick="markAsRead(${contact.id})" title="Mark as Read">
+                                    <button class="btn btn-success" data-action="mark-read" data-contact-id="${contact.id}" title="Mark as Read">
                                         <i class="fas fa-check"></i>
                                     </button>
                                 ` : ''}
-                                <button class="btn btn-danger" onclick="deleteContact(${contact.id})" title="Delete">
+                                <button class="btn btn-danger" data-action="delete" data-contact-id="${contact.id}" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -929,16 +930,16 @@ if ($isLoggedIn) {
                         <td>${dateFormatted}</td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-info" onclick="viewTestimonial(${testimonial.id})" title="View">
+                                <button class="btn btn-info" data-action="view" data-testimonial-id="${testimonial.id}" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="btn btn-warning" onclick="editTestimonial(${testimonial.id})" title="Edit">
+                                <button class="btn btn-warning" data-action="edit" data-testimonial-id="${testimonial.id}" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn ${testimonial.is_active ? 'btn-secondary' : 'btn-success'}" onclick="toggleTestimonialStatus(${testimonial.id})" title="${testimonial.is_active ? 'Deactivate' : 'Activate'}">
+                                <button class="btn ${testimonial.is_active ? 'btn-secondary' : 'btn-success'}" data-action="toggle-status" data-testimonial-id="${testimonial.id}" title="${testimonial.is_active ? 'Deactivate' : 'Activate'}">
                                     <i class="fas fa-${testimonial.is_active ? 'toggle-off' : 'toggle-on'}"></i>
                                 </button>
-                                <button class="btn btn-danger" onclick="deleteTestimonial(${testimonial.id})" title="Delete">
+                                <button class="btn btn-danger" data-action="delete" data-testimonial-id="${testimonial.id}" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -1724,6 +1725,82 @@ if ($isLoggedIn) {
                     showTab(tabName);
                     return false;
                 });
+            });
+            
+            // Set up action button event listeners
+            document.querySelectorAll('[data-action]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const action = this.getAttribute('data-action');
+                    console.log('Action button clicked:', action);
+                    
+                    switch(action) {
+                        case 'refresh-dashboard':
+                            if (typeof refreshDashboard === 'function') refreshDashboard();
+                            break;
+                        case 'mark-all-read':
+                            if (typeof markAllRead === 'function') markAllRead();
+                            break;
+                        case 'refresh-contacts':
+                            if (typeof refreshContacts === 'function') refreshContacts();
+                            break;
+                        case 'add-new-testimonial':
+                            if (typeof addNewTestimonial === 'function') addNewTestimonial();
+                            break;
+                        case 'activate-all-testimonials':
+                            if (typeof activateAllTestimonials === 'function') activateAllTestimonials();
+                            break;
+                        case 'deactivate-all-testimonials':
+                            if (typeof deactivateAllTestimonials === 'function') deactivateAllTestimonials();
+                            break;
+                        case 'refresh-testimonials':
+                            if (typeof refreshTestimonials === 'function') refreshTestimonials();
+                            break;
+                        case 'refresh-database':
+                            if (typeof refreshDatabase === 'function') refreshDatabase();
+                            break;
+                        default:
+                            console.log('Unknown action:', action);
+                    }
+                });
+            });
+            
+            // Set up event delegation for dynamically created buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[data-contact-id]')) {
+                    const action = e.target.getAttribute('data-action');
+                    const contactId = e.target.getAttribute('data-contact-id');
+                    
+                    switch(action) {
+                        case 'view-details':
+                            if (typeof viewContactDetails === 'function') viewContactDetails(contactId);
+                            break;
+                        case 'mark-read':
+                            if (typeof markAsRead === 'function') markAsRead(contactId);
+                            break;
+                        case 'delete':
+                            if (typeof deleteContact === 'function') deleteContact(contactId);
+                            break;
+                    }
+                } else if (e.target.matches('[data-testimonial-id]')) {
+                    const action = e.target.getAttribute('data-action');
+                    const testimonialId = e.target.getAttribute('data-testimonial-id');
+                    
+                    switch(action) {
+                        case 'view':
+                            if (typeof viewTestimonial === 'function') viewTestimonial(testimonialId);
+                            break;
+                        case 'edit':
+                            if (typeof editTestimonial === 'function') editTestimonial(testimonialId);
+                            break;
+                        case 'toggle-status':
+                            if (typeof toggleTestimonialStatus === 'function') toggleTestimonialStatus(testimonialId);
+                            break;
+                        case 'delete':
+                            if (typeof deleteTestimonial === 'function') deleteTestimonial(testimonialId);
+                            break;
+                    }
+                }
             });
             
             // Load initial dashboard data
