@@ -1230,11 +1230,16 @@ if ($isLoggedIn) {
                 setupEventListeners();
             }
             
-            console.log('Admin panel initialized successfully');
-        });
-        
-        // Login handler
-        async function handleLogin(e) {
+            // Set up form submission handlers if logged in
+            if (document.getElementById('saveContactBtn')) {
+                document.getElementById('saveContactBtn').addEventListener('click', saveContact);
+            }
+            if (document.getElementById('saveTestimonialBtn')) {
+                document.getElementById('saveTestimonialBtn').addEventListener('click', saveTestimonial);
+            }
+            
+            // Login handler function
+            async function handleLogin(e) {
             e.preventDefault();
             
             const loginBtn = document.getElementById('loginBtn');
