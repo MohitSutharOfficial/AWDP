@@ -1172,6 +1172,7 @@ if ($isLoggedIn) {
             } catch (error) {
                 console.error('Error updating testimonial status:', error);
             }
+            console.log('TEST: Line before potential syntax error');
         }
         
         async function refreshTestimonials() {
