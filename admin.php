@@ -37,14 +37,30 @@ if (session_status() == PHP_SESSION_NONE) {
 
 $isLoggedIn = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
 
-// Handle login
+// Handle AJAX login
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_login'])) {
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    
+    header('Content-Type: application/json');
+    
+    if ($username === 'admin' && $password === 'admin123') {
+        $_SESSION['admin_logged_in'] = true;
+        echo json_encode(['success' => true, 'message' => 'Login successful']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid credentials']);
+    }
+    exit;
+}
+
+// Handle regular form login (fallback)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     
     if ($username === 'admin' && $password === 'admin123') {
         $_SESSION['admin_logged_in'] = true;
-        header('Location: /admin');
+        header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
     } else {
         $loginError = 'Invalid credentials';
@@ -113,49 +129,6 @@ if ($isLoggedIn) {
     }
 }
 
-if (!$isLoggedIn) {
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - TechCorp Solutions</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Admin Login</h4>
-                    </div>
-                    <div class="card-body">
-                        <?php if (isset($loginError)): ?>
-                            <div class="alert alert-danger"><?php echo $loginError; ?></div>
-                        <?php endif; ?>
-                        <form method="POST">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-                            <button type="submit" name="login" class="btn btn-primary">Login</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
-<?php
-    exit;
-}
 ?>
 
 <!DOCTYPE html>
@@ -195,15 +168,94 @@ if (!$isLoggedIn) {
         /* Quick action buttons */
         .btn { transition: all 0.2s; }
         .btn:hover { transform: translateY(-1px); }
+        
+        /* Login modal styles */
+        .login-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.8); 
+            z-index: 9999; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+        }
+        .login-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 400px;
+            max-width: 90vw;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: scale(0.9) translateY(-50px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes shake {
+            0%, 20%, 40%, 60%, 80%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+        }
+        .content-blurred { filter: blur(5px); pointer-events: none; }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
+    <!-- Login Modal Overlay -->
+    <?php if (!$isLoggedIn): ?>
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <div class="text-center mb-4">
+                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                <h3 class="mb-0">Admin Access</h3>
+                <p class="text-muted">Please login to continue</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user me-2"></i>Username
+                    </label>
+                    <input type="text" class="form-control form-control-lg" id="username" name="username" required 
+                           placeholder="Enter username" autocomplete="username">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-2"></i>Password
+                    </label>
+                    <input type="password" class="form-control form-control-lg" id="password" name="password" required 
+                           placeholder="Enter password" autocomplete="current-password">
+                </div>
+                
+                <div id="loginError" class="alert alert-danger d-none"></div>
+                
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="loginBtn">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    <span id="loginBtnText">Login</span>
+                    <div class="spinner-border spinner-border-sm ms-2 d-none" id="loginSpinner"></div>
+                </button>
+            </form>
+            
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Default: admin / admin123
+                </small>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="container-fluid <?php echo !$isLoggedIn ? 'content-blurred' : ''; ?>" id="mainContent">
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 admin-sidebar p-3">
                 <div class="text-center mb-4">
                     <h4 class="text-white">TechCorp Admin</h4>
+                    <small class="text-white-50">Management Panel</small>
                 </div>
                 
                 <nav>
@@ -1154,6 +1206,106 @@ if (!$isLoggedIn) {
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing admin panel...');
             
+            // Handle login form if not logged in
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+                
+                // Focus on username field
+                document.getElementById('username').focus();
+                
+                // Add Enter key support
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && document.getElementById('loginOverlay')) {
+                        e.preventDefault();
+                        handleLogin(e);
+                    }
+                });
+            }
+            
+            // Set up navigation event listeners only if logged in
+            if (!document.getElementById('loginOverlay')) {
+                setupNavigation();
+                setupEventListeners();
+            }
+            
+            console.log('Admin panel initialized successfully');
+        });
+        
+        // Login handler
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            const loginSpinner = document.getElementById('loginSpinner');
+            const loginError = document.getElementById('loginError');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Validation
+            if (!username || !password) {
+                showLoginError('Please enter both username and password');
+                return;
+            }
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtnText.textContent = 'Logging in...';
+            loginSpinner.classList.remove('d-none');
+            loginError.classList.add('d-none');
+            
+            try {
+                const response = await fetch(window.location.pathname, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `ajax_login=1&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success state
+                    loginBtnText.textContent = 'Success!';
+                    loginBtn.classList.remove('btn-primary');
+                    loginBtn.classList.add('btn-success');
+                    
+                    // Hide overlay and reload page
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    showLoginError(result.message || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginError('Network error. Please try again.');
+            } finally {
+                // Reset loading state if there was an error
+                if (!document.getElementById('loginBtn').classList.contains('btn-success')) {
+                    loginBtn.disabled = false;
+                    loginBtnText.textContent = 'Login';
+                    loginSpinner.classList.add('d-none');
+                }
+            }
+        }
+        
+        function showLoginError(message) {
+            const loginError = document.getElementById('loginError');
+            loginError.textContent = message;
+            loginError.classList.remove('d-none');
+            
+            // Shake animation
+            const loginBox = document.querySelector('.login-box');
+            loginBox.style.animation = 'shake 0.5s ease-in-out';
+            setTimeout(() => {
+                loginBox.style.animation = '';
+            }, 500);
+        }
+        
+        function setupNavigation() {
             // Set up navigation event listeners
             document.querySelectorAll('.admin-nav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -1170,7 +1322,9 @@ if (!$isLoggedIn) {
                     }
                 });
             });
-            
+        }
+        
+        function setupEventListeners() {
             // Set up action button event listeners using event delegation
             document.addEventListener('click', function(e) {
                 const target = e.target.closest('[data-action]');
