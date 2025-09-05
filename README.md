@@ -3,10 +3,10 @@
 > Professional full-stack web application with comprehensive admin panel and database integration
 
 ## ✨ Live Demo
-
-🌐 **Website:** [techcorp-solutions.vercel.app](https://techcorp-solutions.vercel.app)  
-🛠️ **Admin Panel:** [techcorp-solutions.vercel.app/admin](https://techcorp-solutions.vercel.app/admin)  
-📊 **Database Setup:** [techcorp-solutions.vercel.app/setup](https://techcorp-solutions.vercel.app/setup)
+🌐 **Website:** [awdp.up.railway.app](https://awdp.up.railway.app)  
+🛠️ **Admin Panel:** [awdp.up.railway.app/admin](https://awdp.up.railway.app/admin)  
+📊 **Database Setup:** [awdp.up.railway.app/setup](https://awdp.up.railway.app/setup) 
+🌍 **Original Web URL:** [awdp.up.railway.app](https://awdp.up.railway.app)
 
 ## 🎯 Project Overview
 
