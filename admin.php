@@ -1045,7 +1045,7 @@ if ($isLoggedIn) {
                         <div class="col-md-6">
                             <strong>Name:</strong> ${contact.name}<br>
                             <strong>Email:</strong> ${contact.email}<br>
-                            <strong>Status:</strong> <span class="badge bg-${contact.status === 'new' ? 'warning' : contact.status === 'replied' ? 'info' : 'success'}">${contact.status}</span>
+                            <strong>Status:</strong> <span class="badge bg-${contact.status === 'new' ? 'warning' : (contact.status === 'replied' ? 'info' : 'success')}">${contact.status}</span>
                         </div>
                         <div class="col-md-6">
                             <strong>Date:</strong> ${formatDate(contact.created_at)}<br>
