@@ -53,8 +53,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
 // Handle logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    // Clear all session data
+    $_SESSION = array();
+    
+    // Destroy the session
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    
     session_destroy();
-    header('Location: /admin');
+    header('Location: ' . $_SERVER['PHP_SELF']);
     exit;
 }
 
@@ -63,7 +75,11 @@ $contacts = [];
 $testimonials = [];
 $contactCount = 0;
 $newContactCount = 0;
+$repliedContactCount = 0;
 $testimonialCount = 0;
+$activeTestimonialCount = 0;
+$recentContacts = [];
+$recentTestimonials = [];
 
 if ($isLoggedIn) {
     try {
@@ -72,13 +88,26 @@ if ($isLoggedIn) {
         $contacts = $contactsResult ? $contactsResult->fetchAll(PDO::FETCH_ASSOC) : [];
         $contactCount = count($contacts);
         $newContactCount = count(array_filter($contacts, function($contact) {
-            return $contact['status'] === 'new';
+            return ($contact['status'] ?? 'new') === 'new';
         }));
+        $repliedContactCount = count(array_filter($contacts, function($contact) {
+            return ($contact['status'] ?? 'new') === 'replied';
+        }));
+        
+        // Get recent contacts (last 5)
+        $recentContacts = array_slice($contacts, 0, 5);
 
         // Fetch testimonials
         $testimonialsResult = $db->query("SELECT id, name, company, position, testimonial as message, rating, is_active as status, created_at FROM testimonials ORDER BY created_at DESC");
         $testimonials = $testimonialsResult ? $testimonialsResult->fetchAll(PDO::FETCH_ASSOC) : [];
         $testimonialCount = count($testimonials);
+        $activeTestimonialCount = count(array_filter($testimonials, function($testimonial) {
+            return ($testimonial['status'] ?? 1) == 1;
+        }));
+        
+        // Get recent testimonials (last 5)
+        $recentTestimonials = array_slice($testimonials, 0, 5);
+        
     } catch (Exception $e) {
         error_log("Error fetching dashboard data: " . $e->getMessage());
     }
@@ -143,6 +172,29 @@ if (!$isLoggedIn) {
         .admin-nav-link:hover, .admin-nav-link.active { background: rgba(255,255,255,0.1); color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        
+        /* Dashboard enhancements */
+        .card { transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .text-primary-light { color: rgba(255,255,255,0.8) !important; }
+        .text-warning-light { color: rgba(255,255,255,0.8) !important; }
+        .text-success-light { color: rgba(255,255,255,0.8) !important; }
+        .text-info-light { color: rgba(255,255,255,0.8) !important; }
+        
+        /* Activity cards */
+        .list-group-item { transition: background-color 0.2s; }
+        .list-group-item:hover { background-color: rgba(0,0,0,0.02); }
+        
+        /* Statistics animations */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card h2 { animation: countUp 0.6s ease-out; }
+        
+        /* Quick action buttons */
+        .btn { transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); }
     </style>
 </head>
 <body>
@@ -170,7 +222,7 @@ if (!$isLoggedIn) {
                 </nav>
                 
                 <div class="mt-auto pt-3">
-                    <a href="?action=logout" class="admin-nav-link d-block p-3 text-decoration-none text-white-50">
+                    <a href="<?php echo $_SERVER['PHP_SELF']; ?>?action=logout" class="admin-nav-link d-block p-3 text-decoration-none text-white-50" id="logoutBtn">
                         <i class="fas fa-sign-out-alt me-2"></i>Logout
                     </a>
                 </div>
@@ -180,37 +232,199 @@ if (!$isLoggedIn) {
             <div class="col-md-9 col-lg-10 p-4">
                 <!-- Dashboard Tab -->
                 <div id="dashboard" class="tab-content active">
-                    <h2>Dashboard Overview</h2>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard Overview</h2>
+                        <div class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Last updated: <?php echo date('M j, Y - g:i A'); ?>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="row mb-4">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-primary text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title mb-1">Total Contacts</h5>
+                                        <h2 class="mb-0"><?php echo $contactCount; ?></h2>
+                                        <small class="text-primary-light">All time</small>
+                                    </div>
+                                    <div class="text-primary-light">
+                                        <i class="fas fa-envelope fa-3x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-warning text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title mb-1">New Messages</h5>
+                                        <h2 class="mb-0"><?php echo $newContactCount; ?></h2>
+                                        <small class="text-warning-light">Pending review</small>
+                                    </div>
+                                    <div class="text-warning-light">
+                                        <i class="fas fa-bell fa-3x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-success text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title mb-1">Testimonials</h5>
+                                        <h2 class="mb-0"><?php echo $activeTestimonialCount; ?></h2>
+                                        <small class="text-success-light">Active: <?php echo $activeTestimonialCount; ?>/<?php echo $testimonialCount; ?></small>
+                                    </div>
+                                    <div class="text-success-light">
+                                        <i class="fas fa-star fa-3x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm bg-info text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title mb-1">Response Rate</h5>
+                                        <h2 class="mb-0"><?php echo $contactCount > 0 ? round(($repliedContactCount / $contactCount) * 100) : 0; ?>%</h2>
+                                        <small class="text-info-light"><?php echo $repliedContactCount; ?> replied</small>
+                                    </div>
+                                    <div class="text-info-light">
+                                        <i class="fas fa-chart-line fa-3x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
                     <div class="row">
-                        <div class="col-md-3">
-                            <div class="card text-center">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-white border-bottom">
+                                    <h5 class="mb-0"><i class="fas fa-clock me-2 text-primary"></i>Recent Contacts</h5>
+                                </div>
                                 <div class="card-body">
-                                    <h3 class="text-primary"><?php echo $contactCount; ?></h3>
-                                    <p>Total Contacts</p>
+                                    <?php if (!empty($recentContacts)): ?>
+                                        <div class="list-group list-group-flush">
+                                            <?php foreach ($recentContacts as $contact): ?>
+                                            <div class="list-group-item border-0 px-0">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1"><?php echo htmlspecialchars($contact['name'] ?? ''); ?></h6>
+                                                        <p class="mb-1 text-muted small"><?php echo htmlspecialchars($contact['email'] ?? ''); ?></p>
+                                                        <small class="text-muted"><?php echo truncateText(htmlspecialchars($contact['subject'] ?? ''), 50); ?></small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-<?php echo ($contact['status'] ?? 'new') === 'new' ? 'warning' : (($contact['status'] ?? 'new') === 'replied' ? 'success' : 'info'); ?> mb-1">
+                                                            <?php echo ucfirst($contact['status'] ?? 'new'); ?>
+                                                        </span>
+                                                        <br>
+                                                        <small class="text-muted"><?php echo formatDate($contact['created_at'] ?? ''); ?></small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <div class="text-center mt-3">
+                                            <button class="btn btn-outline-primary btn-sm" data-tab="contacts" onclick="showTab('contacts')">
+                                                <i class="fas fa-arrow-right me-1"></i>View All Contacts
+                                            </button>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">No contacts yet</p>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card text-center">
+
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-white border-bottom">
+                                    <h5 class="mb-0"><i class="fas fa-star me-2 text-warning"></i>Recent Testimonials</h5>
+                                </div>
                                 <div class="card-body">
-                                    <h3 class="text-warning"><?php echo $newContactCount; ?></h3>
-                                    <p>New Contacts</p>
+                                    <?php if (!empty($recentTestimonials)): ?>
+                                        <div class="list-group list-group-flush">
+                                            <?php foreach ($recentTestimonials as $testimonial): ?>
+                                            <div class="list-group-item border-0 px-0">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1"><?php echo htmlspecialchars($testimonial['name'] ?? ''); ?></h6>
+                                                        <p class="mb-1 text-muted small"><?php echo htmlspecialchars($testimonial['company'] ?? 'Unknown Company'); ?></p>
+                                                        <div class="text-warning mb-1">
+                                                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                                <i class="fas fa-star<?php echo $i <= ($testimonial['rating'] ?? 5) ? '' : '-o'; ?>"></i>
+                                                            <?php endfor; ?>
+                                                        </div>
+                                                        <small class="text-muted"><?php echo truncateText(htmlspecialchars($testimonial['message'] ?? ''), 60); ?></small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-<?php echo ($testimonial['status'] ?? 1) == 1 ? 'success' : 'warning'; ?> mb-1">
+                                                            <?php echo ($testimonial['status'] ?? 1) == 1 ? 'Active' : 'Inactive'; ?>
+                                                        </span>
+                                                        <br>
+                                                        <small class="text-muted"><?php echo formatDate($testimonial['created_at'] ?? ''); ?></small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <div class="text-center mt-3">
+                                            <button class="btn btn-outline-warning btn-sm" data-tab="testimonials" onclick="showTab('testimonials')">
+                                                <i class="fas fa-arrow-right me-1"></i>View All Testimonials
+                                            </button>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">No testimonials yet</p>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h3 class="text-success"><?php echo $testimonialCount; ?></h3>
-                                    <p>Testimonials</p>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-white border-bottom">
+                                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-danger"></i>Quick Actions</h5>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card text-center">
                                 <div class="card-body">
-                                    <h3 class="text-info">Online</h3>
-                                    <p>System Status</p>
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
+                                            <button class="btn btn-outline-primary w-100" data-tab="contacts" onclick="showTab('contacts')">
+                                                <i class="fas fa-envelope me-2"></i>Manage Contacts
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <button class="btn btn-outline-warning w-100" data-action="add-testimonial">
+                                                <i class="fas fa-plus me-2"></i>Add Testimonial
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <button class="btn btn-outline-info w-100" data-tab="database" onclick="showTab('database')">
+                                                <i class="fas fa-database me-2"></i>Database Tools
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <button class="btn btn-outline-secondary w-100" onclick="location.reload()">
+                                                <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -943,6 +1157,11 @@ if (!$isLoggedIn) {
             // Set up navigation event listeners
             document.querySelectorAll('.admin-nav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
+                    // Don't prevent default for logout link
+                    if (this.id === 'logoutBtn') {
+                        return; // Let the logout link work normally
+                    }
+                    
                     e.preventDefault();
                     const tabName = this.getAttribute('data-tab');
                     if (tabName) {
