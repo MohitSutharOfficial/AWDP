@@ -13,6 +13,7 @@ function formatDate($dateString, $format = 'M j, Y') {
 }
 
 function truncateText($text, $length = 100) {
+    if (empty($text) || $text === null) return '-';
     if (strlen($text) <= $length) return $text;
     return substr($text, 0, $length) . '...';
 }
@@ -75,7 +76,7 @@ if ($isLoggedIn) {
         }));
 
         // Fetch testimonials
-        $testimonialsResult = $db->query("SELECT * FROM testimonials ORDER BY created_at DESC");
+        $testimonialsResult = $db->query("SELECT id, name, company, position, testimonial as message, rating, is_active as status, created_at FROM testimonials ORDER BY created_at DESC");
         $testimonials = $testimonialsResult ? $testimonialsResult->fetchAll(PDO::FETCH_ASSOC) : [];
         $testimonialCount = count($testimonials);
     } catch (Exception $e) {
@@ -268,13 +269,13 @@ if (!$isLoggedIn) {
                                         <?php foreach ($contacts as $contact): ?>
                                         <tr data-contact-id="<?php echo $contact['id']; ?>">
                                             <td><input type="checkbox" class="contact-checkbox" value="<?php echo $contact['id']; ?>"></td>
-                                            <td><?php echo htmlspecialchars($contact['name']); ?></td>
-                                            <td><?php echo htmlspecialchars($contact['email']); ?></td>
-                                            <td><?php echo truncateText(htmlspecialchars($contact['subject']), 50); ?></td>
-                                            <td><?php echo formatDate($contact['created_at']); ?></td>
+                                            <td><?php echo htmlspecialchars($contact['name'] ?? ''); ?></td>
+                                            <td><?php echo htmlspecialchars($contact['email'] ?? ''); ?></td>
+                                            <td><?php echo truncateText(htmlspecialchars($contact['subject'] ?? ''), 50); ?></td>
+                                            <td><?php echo formatDate($contact['created_at'] ?? ''); ?></td>
                                             <td>
-                                                <span class="badge bg-<?php echo $contact['status'] === 'new' ? 'warning' : ($contact['status'] === 'replied' ? 'info' : 'success'); ?>">
-                                                    <?php echo ucfirst($contact['status']); ?>
+                                                <span class="badge bg-<?php echo ($contact['status'] ?? 'new') === 'new' ? 'warning' : (($contact['status'] ?? 'new') === 'replied' ? 'info' : 'success'); ?>">
+                                                    <?php echo ucfirst($contact['status'] ?? 'new'); ?>
                                                 </span>
                                             </td>
                                             <td>
@@ -332,9 +333,8 @@ if (!$isLoggedIn) {
                         <div class="col-md-6">
                             <select id="filterTestimonialStatus" class="form-select">
                                 <option value="">All Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
+                                <option value="pending">Inactive</option>
+                                <option value="approved">Active</option>
                             </select>
                         </div>
                     </div>
@@ -357,9 +357,9 @@ if (!$isLoggedIn) {
                                     <tbody id="testimonialsTableBody">
                                         <?php foreach ($testimonials as $testimonial): ?>
                                         <tr data-testimonial-id="<?php echo $testimonial['id']; ?>">
-                                            <td><?php echo htmlspecialchars($testimonial['name']); ?></td>
+                                            <td><?php echo htmlspecialchars($testimonial['name'] ?? ''); ?></td>
                                             <td><?php echo htmlspecialchars($testimonial['company'] ?? '-'); ?></td>
-                                            <td><?php echo truncateText(htmlspecialchars($testimonial['message']), 80); ?></td>
+                                            <td><?php echo truncateText(htmlspecialchars($testimonial['message'] ?? ''), 80); ?></td>
                                             <td>
                                                 <div class="text-warning">
                                                     <?php for ($i = 1; $i <= 5; $i++): ?>
@@ -369,8 +369,8 @@ if (!$isLoggedIn) {
                                             </td>
                                             <td><?php echo formatDate($testimonial['created_at']); ?></td>
                                             <td>
-                                                <span class="badge bg-<?php echo ($testimonial['status'] ?? 'pending') === 'approved' ? 'success' : (($testimonial['status'] ?? 'pending') === 'rejected' ? 'danger' : 'warning'); ?>">
-                                                    <?php echo ucfirst($testimonial['status'] ?? 'pending'); ?>
+                                                <span class="badge bg-<?php echo ($testimonial['status'] ?? 1) == 1 ? 'success' : 'warning'; ?>">
+                                                    <?php echo ($testimonial['status'] ?? 1) == 1 ? 'Active' : 'Inactive'; ?>
                                                 </span>
                                             </td>
                                             <td>
@@ -381,9 +381,13 @@ if (!$isLoggedIn) {
                                                     <button class="btn btn-outline-warning" data-action="edit-testimonial" data-id="<?php echo $testimonial['id']; ?>">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <?php if (($testimonial['status'] ?? 'pending') !== 'approved'): ?>
-                                                    <button class="btn btn-outline-success" data-action="approve-testimonial" data-id="<?php echo $testimonial['id']; ?>">
+                                                    <?php if (($testimonial['status'] ?? 1) != 1): ?>
+                                                    <button class="btn btn-outline-success" data-action="activate-testimonial" data-id="<?php echo $testimonial['id']; ?>">
                                                         <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <?php else: ?>
+                                                    <button class="btn btn-outline-warning" data-action="deactivate-testimonial" data-id="<?php echo $testimonial['id']; ?>">
+                                                        <i class="fas fa-pause"></i>
                                                     </button>
                                                     <?php endif; ?>
                                                     <button class="btn btn-outline-danger" data-action="delete-testimonial" data-id="<?php echo $testimonial['id']; ?>">
@@ -598,9 +602,8 @@ if (!$isLoggedIn) {
                                 <div class="mb-3">
                                     <label for="testimonialStatus" class="form-label">Status</label>
                                     <select class="form-select" id="testimonialStatus" name="status">
-                                        <option value="pending">Pending</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="rejected">Rejected</option>
+                                        <option value="pending">Inactive</option>
+                                        <option value="approved">Active</option>
                                     </select>
                                 </div>
                             </div>
@@ -843,11 +846,11 @@ if (!$isLoggedIn) {
             if (testimonial) {
                 // Edit mode
                 document.getElementById('testimonialId').value = testimonial.id;
-                document.getElementById('testimonialName').value = testimonial.name;
+                document.getElementById('testimonialName').value = testimonial.name || '';
                 document.getElementById('testimonialCompany').value = testimonial.company || '';
-                document.getElementById('testimonialMessage').value = testimonial.message;
+                document.getElementById('testimonialMessage').value = testimonial.testimonial || '';
                 document.getElementById('testimonialRating').value = testimonial.rating || 5;
-                document.getElementById('testimonialStatus').value = testimonial.status || 'pending';
+                document.getElementById('testimonialStatus').value = testimonial.is_active == 1 ? 'approved' : 'pending';
                 document.querySelector('.modal-title').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Testimonial';
             } else {
                 // Add mode
@@ -892,16 +895,16 @@ if (!$isLoggedIn) {
             }
         }
         
-        async function approveTestimonial(id) {
+        async function updateTestimonialStatus(id, status) {
             try {
                 await makeApiCall('update_testimonial_status', { 
                     id: id, 
-                    status: 'approved' 
+                    status: status 
                 });
-                showToast('success', 'Testimonial approved');
+                showToast('success', `Testimonial ${status === 'approved' ? 'activated' : 'deactivated'} successfully`);
                 refreshTestimonials();
             } catch (error) {
-                console.error('Error approving testimonial:', error);
+                console.error('Error updating testimonial status:', error);
             }
         }
         
@@ -985,8 +988,11 @@ if (!$isLoggedIn) {
                     case 'delete-testimonial':
                         deleteTestimonial(id);
                         break;
-                    case 'approve-testimonial':
-                        approveTestimonial(id);
+                    case 'activate-testimonial':
+                        updateTestimonialStatus(id, 'approved');
+                        break;
+                    case 'deactivate-testimonial':
+                        updateTestimonialStatus(id, 'pending');
                         break;
                     case 'refresh-testimonials':
                         refreshTestimonials();
