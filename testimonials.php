@@ -171,7 +171,7 @@ try {
                     <li class="nav-item"><a class="nav-link" href="index.html#portfolio">Portfolio</a></li>
                     <li class="nav-item"><a class="nav-link active" href="testimonials.php">Testimonials</a></li>
                     <li class="nav-item"><a class="nav-link" href="contact.php">Contact</a></li>
-                    <li class="nav-item"><a class="nav-link" href="admin.php">Admin</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="adminLogin(); return false;">Admin</a></li>
                 </ul>
             </div>
         </div>
@@ -282,6 +282,37 @@ try {
     
     <!-- AJAX Form Enhancement -->
     <script>
+    // Admin popup authentication
+    async function adminLogin() {
+        const username = prompt('Enter admin username:');
+        if (!username) return;
+        
+        const password = prompt('Enter admin password:');
+        if (!password) return;
+        
+        try {
+            const response = await fetch('/admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `popup_login=1&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Login successful! Redirecting to admin panel...');
+                window.location.href = '/admin';
+            } else {
+                alert('Invalid credentials. Please try again.');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Network error. Please try again.');
+        }
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         // Add any testimonial-specific JavaScript here
         console.log('Testimonials page loaded');

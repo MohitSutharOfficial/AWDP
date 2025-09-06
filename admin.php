@@ -37,8 +37,8 @@ if (session_status() == PHP_SESSION_NONE) {
 
 $isLoggedIn = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
 
-// Handle AJAX login
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_login'])) {
+// Handle AJAX popup login
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['popup_login'])) {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     
@@ -53,38 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_login'])) {
     exit;
 }
 
-// Handle regular form login (fallback)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    if ($username === 'admin' && $password === 'admin123') {
-        $_SESSION['admin_logged_in'] = true;
-        header('Location: ' . $_SERVER['PHP_SELF']);
-        exit;
-    } else {
-        $loginError = 'Invalid credentials';
-    }
-}
-
 // Handle logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
-    // Clear all session data
     $_SESSION = array();
     
-    // Destroy the session
-    if (ini_get("session.use_cookies")) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000,
-            $params["path"], $params["domain"],
-            $params["secure"], $params["httponly"]
-        );
-    }
-    
-    // Clear all session data
-    $_SESSION = array();
-    
-    // Destroy the session
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
         setcookie(session_name(), '', time() - 42000,
@@ -94,8 +66,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     }
     
     session_destroy();
-    header('Location: ' . $_SERVER['PHP_SELF']);
-    header('Location: ' . $_SERVER['PHP_SELF']);
+    header('Location: /');
+    exit;
+}
+
+// Redirect to home if not logged in
+if (!$isLoggedIn) {
+    header('Location: /?admin_required=1');
     exit;
 }
 
@@ -105,52 +82,39 @@ $testimonials = [];
 $contactCount = 0;
 $newContactCount = 0;
 $repliedContactCount = 0;
-$repliedContactCount = 0;
 $testimonialCount = 0;
 $activeTestimonialCount = 0;
 $recentContacts = [];
 $recentTestimonials = [];
-$activeTestimonialCount = 0;
-$recentContacts = [];
-$recentTestimonials = [];
 
-if ($isLoggedIn) {
-    try {
-        // Fetch contacts
-        $contactsResult = $db->query("SELECT * FROM contacts ORDER BY created_at DESC");
-        $contacts = $contactsResult ? $contactsResult->fetchAll(PDO::FETCH_ASSOC) : [];
-        $contactCount = count($contacts);
-        $newContactCount = count(array_filter($contacts, function($contact) {
-            return ($contact['status'] ?? 'new') === 'new';
-        }));
-        $repliedContactCount = count(array_filter($contacts, function($contact) {
-            return ($contact['status'] ?? 'new') === 'replied';
-        }));
-        
-        // Get recent contacts (last 5)
-        $recentContacts = array_slice($contacts, 0, 5);
+try {
+    // Fetch contacts
+    $contactsResult = $db->query("SELECT * FROM contacts ORDER BY created_at DESC");
+    $contacts = $contactsResult ? $contactsResult->fetchAll(PDO::FETCH_ASSOC) : [];
+    $contactCount = count($contacts);
+    $newContactCount = count(array_filter($contacts, function($contact) {
+        return ($contact['status'] ?? 'new') === 'new';
+    }));
+    $repliedContactCount = count(array_filter($contacts, function($contact) {
+        return ($contact['status'] ?? 'new') === 'replied';
+    }));
+    
+    // Get recent contacts (last 5)
+    $recentContacts = array_slice($contacts, 0, 5);
 
-        // Fetch testimonials
-        $testimonialsResult = $db->query("SELECT id, name, company, position, testimonial as message, rating, is_active as status, created_at FROM testimonials ORDER BY created_at DESC");
-        $testimonials = $testimonialsResult ? $testimonialsResult->fetchAll(PDO::FETCH_ASSOC) : [];
-        $testimonialCount = count($testimonials);
-        $activeTestimonialCount = count(array_filter($testimonials, function($testimonial) {
-            return ($testimonial['status'] ?? 1) == 1;
-        }));
-        
-        // Get recent testimonials (last 5)
-        $recentTestimonials = array_slice($testimonials, 0, 5);
-        
-        $activeTestimonialCount = count(array_filter($testimonials, function($testimonial) {
-            return ($testimonial['status'] ?? 1) == 1;
-        }));
-        
-        // Get recent testimonials (last 5)
-        $recentTestimonials = array_slice($testimonials, 0, 5);
-        
-    } catch (Exception $e) {
-        error_log("Error fetching dashboard data: " . $e->getMessage());
-    }
+    // Fetch testimonials
+    $testimonialsResult = $db->query("SELECT id, name, company, position, testimonial as message, rating, is_active as status, created_at FROM testimonials ORDER BY created_at DESC");
+    $testimonials = $testimonialsResult ? $testimonialsResult->fetchAll(PDO::FETCH_ASSOC) : [];
+    $testimonialCount = count($testimonials);
+    $activeTestimonialCount = count(array_filter($testimonials, function($testimonial) {
+        return ($testimonial['status'] ?? 1) == 1;
+    }));
+    
+    // Get recent testimonials (last 5)
+    $recentTestimonials = array_slice($testimonials, 0, 5);
+    
+} catch (Exception $e) {
+    error_log("Error fetching dashboard data: " . $e->getMessage());
 }
 
 ?>
@@ -227,53 +191,9 @@ if ($isLoggedIn) {
     </style>
 </head>
 <body>
-    <!-- Login Modal Overlay -->
-    <?php if (!$isLoggedIn): ?>
-    <div id="loginOverlay" class="login-overlay">
-        <div class="login-box">
-            <div class="text-center mb-4">
-                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
-                <h3 class="mb-0">Admin Access</h3>
-                <p class="text-muted">Please login to continue</p>
-            </div>
-            
-            <form id="loginForm">
-                <div class="mb-3">
-                    <label for="username" class="form-label">
-                        <i class="fas fa-user me-2"></i>Username
-                    </label>
-                    <input type="text" class="form-control form-control-lg" id="username" name="username" required 
-                           placeholder="Enter username" autocomplete="username">
-                </div>
-                
-                <div class="mb-4">
-                    <label for="password" class="form-label">
-                        <i class="fas fa-lock me-2"></i>Password
-                    </label>
-                    <input type="password" class="form-control form-control-lg" id="password" name="password" required 
-                           placeholder="Enter password" autocomplete="current-password">
-                </div>
-                
-                <div id="loginError" class="alert alert-danger d-none"></div>
-                
-                <button type="submit" class="btn btn-primary btn-lg w-100" id="loginBtn">
-                    <i class="fas fa-sign-in-alt me-2"></i>
-                    <span id="loginBtnText">Login</span>
-                    <div class="spinner-border spinner-border-sm ms-2 d-none" id="loginSpinner"></div>
-                </button>
-            </form>
-            
-            <div class="text-center mt-3">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Default: admin / admin123
-                </small>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
 
-    <div class="container-fluid <?php echo !$isLoggedIn ? 'content-blurred' : ''; ?>" id="mainContent">
+
+    <div class="container-fluid" id="mainContent">
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 admin-sidebar p-3">
@@ -298,7 +218,6 @@ if ($isLoggedIn) {
                 </nav>
                 
                 <div class="mt-auto pt-3">
-                    <a href="<?php echo $_SERVER['PHP_SELF']; ?>?action=logout" class="admin-nav-link d-block p-3 text-decoration-none text-white-50" id="logoutBtn">
                     <a href="<?php echo $_SERVER['PHP_SELF']; ?>?action=logout" class="admin-nav-link d-block p-3 text-decoration-none text-white-50" id="logoutBtn">
                         <i class="fas fa-sign-out-alt me-2"></i>Logout
                     </a>
@@ -381,131 +300,13 @@ if ($isLoggedIn) {
                     </div>
 
                     <!-- Recent Activity -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard Overview</h2>
-                        <div class="text-muted">
-                            <i class="fas fa-clock me-1"></i>
-                            Last updated: <?php echo date('M j, Y - g:i A'); ?>
-                        </div>
-                    </div>
-
-                    <!-- Statistics Cards -->
-                    <div class="row mb-4">
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <div class="card h-100 border-0 shadow-sm bg-primary text-white">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="flex-grow-1">
-                                        <h5 class="card-title mb-1">Total Contacts</h5>
-                                        <h2 class="mb-0"><?php echo $contactCount; ?></h2>
-                                        <small class="text-primary-light">All time</small>
-                                    </div>
-                                    <div class="text-primary-light">
-                                        <i class="fas fa-envelope fa-3x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <div class="card h-100 border-0 shadow-sm bg-warning text-white">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="flex-grow-1">
-                                        <h5 class="card-title mb-1">New Messages</h5>
-                                        <h2 class="mb-0"><?php echo $newContactCount; ?></h2>
-                                        <small class="text-warning-light">Pending review</small>
-                                    </div>
-                                    <div class="text-warning-light">
-                                        <i class="fas fa-bell fa-3x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <div class="card h-100 border-0 shadow-sm bg-success text-white">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="flex-grow-1">
-                                        <h5 class="card-title mb-1">Testimonials</h5>
-                                        <h2 class="mb-0"><?php echo $activeTestimonialCount; ?></h2>
-                                        <small class="text-success-light">Active: <?php echo $activeTestimonialCount; ?>/<?php echo $testimonialCount; ?></small>
-                                    </div>
-                                    <div class="text-success-light">
-                                        <i class="fas fa-star fa-3x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <div class="card h-100 border-0 shadow-sm bg-info text-white">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="flex-grow-1">
-                                        <h5 class="card-title mb-1">Response Rate</h5>
-                                        <h2 class="mb-0"><?php echo $contactCount > 0 ? round(($repliedContactCount / $contactCount) * 100) : 0; ?>%</h2>
-                                        <small class="text-info-light"><?php echo $repliedContactCount; ?> replied</small>
-                                    </div>
-                                    <div class="text-info-light">
-                                        <i class="fas fa-chart-line fa-3x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Activity -->
                     <div class="row">
                         <div class="col-lg-6 mb-4">
                             <div class="card h-100">
                                 <div class="card-header bg-white border-bottom">
                                     <h5 class="mb-0"><i class="fas fa-clock me-2 text-primary"></i>Recent Contacts</h5>
                                 </div>
-                        <div class="col-lg-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-white border-bottom">
-                                    <h5 class="mb-0"><i class="fas fa-clock me-2 text-primary"></i>Recent Contacts</h5>
-                                </div>
                                 <div class="card-body">
-                                    <?php if (!empty($recentContacts)): ?>
-                                        <div class="list-group list-group-flush">
-                                            <?php foreach ($recentContacts as $contact): ?>
-                                            <div class="list-group-item border-0 px-0">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div class="flex-grow-1">
-                                                        <h6 class="mb-1"><?php echo htmlspecialchars($contact['name'] ?? ''); ?></h6>
-                                                        <p class="mb-1 text-muted small"><?php echo htmlspecialchars($contact['email'] ?? ''); ?></p>
-                                                        <small class="text-muted"><?php echo truncateText(htmlspecialchars($contact['subject'] ?? ''), 50); ?></small>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-<?php echo ($contact['status'] ?? 'new') === 'new' ? 'warning' : (($contact['status'] ?? 'new') === 'replied' ? 'success' : 'info'); ?> mb-1">
-                                                            <?php echo ucfirst($contact['status'] ?? 'new'); ?>
-                                                        </span>
-                                                        <br>
-                                                        <small class="text-muted"><?php echo formatDate($contact['created_at'] ?? ''); ?></small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <div class="text-center mt-3">
-                                            <button class="btn btn-outline-primary btn-sm" data-tab="contacts" onclick="showTab('contacts')">
-                                                <i class="fas fa-arrow-right me-1"></i>View All Contacts
-                                            </button>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="text-center py-4">
-                                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                            <p class="text-muted">No contacts yet</p>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-white border-bottom">
-                                    <h5 class="mb-0"><i class="fas fa-star me-2 text-warning"></i>Recent Testimonials</h5>
-                                </div>
                                     <?php if (!empty($recentContacts)): ?>
                                         <div class="list-group list-group-flush">
                                             <?php foreach ($recentContacts as $contact): ?>
@@ -597,80 +398,7 @@ if ($isLoggedIn) {
                                 <div class="card-header bg-white border-bottom">
                                     <h5 class="mb-0"><i class="fas fa-bolt me-2 text-danger"></i>Quick Actions</h5>
                                 </div>
-                                    <?php if (!empty($recentTestimonials)): ?>
-                                        <div class="list-group list-group-flush">
-                                            <?php foreach ($recentTestimonials as $testimonial): ?>
-                                            <div class="list-group-item border-0 px-0">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div class="flex-grow-1">
-                                                        <h6 class="mb-1"><?php echo htmlspecialchars($testimonial['name'] ?? ''); ?></h6>
-                                                        <p class="mb-1 text-muted small"><?php echo htmlspecialchars($testimonial['company'] ?? 'Unknown Company'); ?></p>
-                                                        <div class="text-warning mb-1">
-                                                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                                                <i class="fas fa-star<?php echo $i <= ($testimonial['rating'] ?? 5) ? '' : '-o'; ?>"></i>
-                                                            <?php endfor; ?>
-                                                        </div>
-                                                        <small class="text-muted"><?php echo truncateText(htmlspecialchars($testimonial['message'] ?? ''), 60); ?></small>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-<?php echo ($testimonial['status'] ?? 1) == 1 ? 'success' : 'warning'; ?> mb-1">
-                                                            <?php echo ($testimonial['status'] ?? 1) == 1 ? 'Active' : 'Inactive'; ?>
-                                                        </span>
-                                                        <br>
-                                                        <small class="text-muted"><?php echo formatDate($testimonial['created_at'] ?? ''); ?></small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <div class="text-center mt-3">
-                                            <button class="btn btn-outline-warning btn-sm" data-tab="testimonials" onclick="showTab('testimonials')">
-                                                <i class="fas fa-arrow-right me-1"></i>View All Testimonials
-                                            </button>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="text-center py-4">
-                                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                                            <p class="text-muted">No testimonials yet</p>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Actions -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header bg-white border-bottom">
-                                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-danger"></i>Quick Actions</h5>
-                                </div>
                                 <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-3 mb-2">
-                                            <button class="btn btn-outline-primary w-100" data-tab="contacts" onclick="showTab('contacts')">
-                                                <i class="fas fa-envelope me-2"></i>Manage Contacts
-                                            </button>
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <button class="btn btn-outline-warning w-100" data-action="add-testimonial">
-                                                <i class="fas fa-plus me-2"></i>Add Testimonial
-                                            </button>
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <button class="btn btn-outline-info w-100" data-tab="database" onclick="showTab('database')">
-                                                <i class="fas fa-database me-2"></i>Database Tools
-                                            </button>
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <button class="btn btn-outline-secondary w-100" onclick="location.reload()">
-                                                <i class="fas fa-sync-alt me-2"></i>Refresh Data
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                                     <div class="row">
                                         <div class="col-md-3 mb-2">
                                             <button class="btn btn-outline-primary w-100" data-tab="contacts" onclick="showTab('contacts')">
@@ -1388,7 +1116,6 @@ if ($isLoggedIn) {
             } catch (error) {
                 console.error('Error updating testimonial status:', error);
             }
-            console.log('TEST: Line before potential syntax error');
         }
         
         async function refreshTestimonials() {
@@ -1423,119 +1150,21 @@ if ($isLoggedIn) {
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing admin panel...');
             
-            // Handle login form if not logged in
-            const loginForm = document.getElementById('loginForm');
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleLogin);
-                
-                // Focus on username field
-                document.getElementById('username').focus();
-                
-                // Add Enter key support
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && document.getElementById('loginOverlay')) {
-                        e.preventDefault();
-                        handleLogin(e);
-                    }
-                });
-            }
+            setupNavigation();
+            setupEventListeners();
             
-            // Set up navigation event listeners only if logged in
-            if (!document.getElementById('loginOverlay')) {
-                setupNavigation();
-                setupEventListeners();
-            }
-            
-            // Set up form submission handlers if logged in
-            if (document.getElementById('saveContactBtn')) {
-                document.getElementById('saveContactBtn').addEventListener('click', saveContact);
-            }
+            // Set up form submission handlers
             if (document.getElementById('saveTestimonialBtn')) {
                 document.getElementById('saveTestimonialBtn').addEventListener('click', saveTestimonial);
             }
             
-            // Login handler function
-            async function handleLogin(e) {
-            e.preventDefault();
-            
-            const loginBtn = document.getElementById('loginBtn');
-            const loginBtnText = document.getElementById('loginBtnText');
-            const loginSpinner = document.getElementById('loginSpinner');
-            const loginError = document.getElementById('loginError');
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            // Validation
-            if (!username || !password) {
-                showLoginError('Please enter both username and password');
-                return;
-            }
-            
-            // Show loading state
-            loginBtn.disabled = true;
-            loginBtnText.textContent = 'Logging in...';
-            loginSpinner.classList.remove('d-none');
-            loginError.classList.add('d-none');
-            
-            try {
-                const response = await fetch(window.location.pathname, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `ajax_login=1&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Show success state
-                    loginBtnText.textContent = 'Success!';
-                    loginBtn.classList.remove('btn-primary');
-                    loginBtn.classList.add('btn-success');
-                    
-                    // Hide overlay and reload page
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 500);
-                } else {
-                    showLoginError(result.message || 'Login failed');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                showLoginError('Network error. Please try again.');
-            } finally {
-                // Reset loading state if there was an error
-                if (!document.getElementById('loginBtn').classList.contains('btn-success')) {
-                    loginBtn.disabled = false;
-                    loginBtnText.textContent = 'Login';
-                    loginSpinner.classList.add('d-none');
-                }
-            }
-        }
-        
-        function showLoginError(message) {
-            const loginError = document.getElementById('loginError');
-            loginError.textContent = message;
-            loginError.classList.remove('d-none');
-            
-            // Shake animation
-            const loginBox = document.querySelector('.login-box');
-            loginBox.style.animation = 'shake 0.5s ease-in-out';
-            setTimeout(() => {
-                loginBox.style.animation = '';
-            }, 500);
-        }
+            console.log('Admin panel initialized successfully with full functionality');
+        });
         
         function setupNavigation() {
             // Set up navigation event listeners
             document.querySelectorAll('.admin-nav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
-                    // Don't prevent default for logout link
-                    if (this.id === 'logoutBtn') {
-                        return; // Let the logout link work normally
-                    }
-                    
                     // Don't prevent default for logout link
                     if (this.id === 'logoutBtn') {
                         return; // Let the logout link work normally

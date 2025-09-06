@@ -302,7 +302,7 @@ $stats = [
                         <a class="nav-link" href="/contact">Contact</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin">Admin</a>
+                        <a class="nav-link" href="#" onclick="adminLogin(); return false;">Admin</a>
                     </li>
                 </ul>
             </div>
@@ -479,6 +479,47 @@ $stats = [
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Check if redirected from admin page
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('admin_required') === '1') {
+            setTimeout(() => {
+                if (confirm('Admin access required. Would you like to login now?')) {
+                    adminLogin();
+                }
+            }, 500);
+        }
+        
+        // Admin popup authentication
+        async function adminLogin() {
+            const username = prompt('Enter admin username:');
+            if (!username) return;
+            
+            const password = prompt('Enter admin password:');
+            if (!password) return;
+            
+            try {
+                const response = await fetch('/admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `popup_login=1&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Login successful! Redirecting to admin panel...');
+                    window.location.href = '/admin';
+                } else {
+                    alert('Invalid credentials. Please try again.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Network error. Please try again.');
+            }
+        }
+        
         // Smooth scrolling for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
