@@ -93,438 +93,526 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us - TechCorp Solutions</title>
+    <title>Contact Us - TechCorp Learning Solutions</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
-    
+    <!-- Government-style CSS -->
     <style>
-        /* Enhanced Contact Page Styles */
-        .contact-info-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 20px;
-            padding: 2rem;
-            height: 100%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        :root {
+            --primary-blue: #2c5aa0;
+            --secondary-blue: #1e3d70;
+            --light-blue: #e8f0fe;
+            --dark-gray: #333333;
+            --medium-gray: #666666;
+            --light-gray: #f8f9fa;
+            --border-gray: #dee2e6;
+            --success-green: #28a745;
+            --warning-orange: #fd7e14;
         }
         
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--dark-gray);
+            background-color: #ffffff;
+        }
+        
+        /* Header */
+        .main-header {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 20px 0;
+            border-bottom: 3px solid var(--secondary-blue);
+        }
+        
+        .site-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .site-subtitle {
+            font-size: 14px;
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+        }
+        
+        /* Navigation */
+        .main-nav {
+            background-color: var(--light-blue);
+            border-bottom: 2px solid var(--border-gray);
+            padding: 0;
+        }
+        
+        .main-nav .navbar-nav .nav-link {
+            color: var(--primary-blue);
+            font-weight: 500;
+            padding: 15px 20px;
+            border-right: 1px solid var(--border-gray);
+        }
+        
+        .main-nav .navbar-nav .nav-link:hover,
+        .main-nav .navbar-nav .nav-link.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        
+        /* Page Title */
+        .page-title {
+            background-color: var(--light-gray);
+            border: 2px solid var(--border-gray);
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        
+        .page-title h1 {
+            color: var(--primary-blue);
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .page-title p {
+            color: var(--medium-gray);
+            font-size: 16px;
+            margin: 0;
+        }
+        
+        /* Data Boxes */
+        .data-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-header {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .data-box {
+            border: 2px solid var(--border-gray);
+            background-color: white;
+            margin-bottom: 20px;
+        }
+        
+        .data-box-header {
+            background-color: var(--light-blue);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-gray);
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+        
+        .data-box-content {
+            padding: 20px;
+        }
+        
+        /* Contact Info Cards */
         .contact-info-item {
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-        
-        .contact-info-item i {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
+            background-color: white;
+            border: 1px solid var(--border-gray);
+            padding: 20px;
+            margin-bottom: 15px;
         }
         
         .contact-info-item h5 {
-            color: white;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
+            color: var(--primary-blue);
+            font-weight: bold;
+            margin-bottom: 10px;
         }
         
         .contact-info-item p {
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 0;
-            line-height: 1.5;
+            color: var(--medium-gray);
+            margin: 0;
         }
         
-        .contact-form {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
+        /* Form Elements */
+        .form-control, .form-select {
+            border: 2px solid var(--border-gray);
+            padding: 12px 15px;
+            font-size: 14px;
+            background-color: var(--light-gray);
         }
         
-        .form-control,
-        .form-select {
-            border-radius: 12px;
-            border: 2px solid #e5e7eb;
-            padding: 0.875rem 1rem;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background-color: #f9fafb;
-        }
-        
-        .form-control:focus,
-        .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: none;
             background-color: white;
         }
         
-        .form-control.is-invalid {
-            border-color: #dc3545;
-            background-color: #fff5f5;
-        }
-        
         .form-label {
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: var(--dark-gray);
+            margin-bottom: 8px;
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 12px;
-            padding: 0.875rem 2rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-primary:disabled {
-            opacity: 0.6;
-            transform: none;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-        
-        .social-links a {
-            background: rgba(255, 255, 255, 0.2);
+        /* Buttons */
+        .btn-primary-gov {
+            background-color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
             color: white;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            padding: 12px 30px;
+            font-weight: bold;
             text-decoration: none;
-            transition: all 0.3s ease;
-            margin-right: 1rem;
         }
         
-        .social-links a:hover {
-            background: white;
-            color: #667eea;
-            transform: translateY(-3px);
+        .btn-primary-gov:hover {
+            background-color: var(--secondary-blue);
+            border-color: var(--secondary-blue);
+            color: white;
         }
         
-        .map-container {
-            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-            border: 2px dashed #d1d5db;
-            transition: all 0.3s ease;
+        .btn-secondary-gov {
+            background-color: white;
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            padding: 12px 30px;
+            font-weight: bold;
+            text-decoration: none;
         }
         
-        .map-container:hover {
-            border-color: #667eea;
-            background: linear-gradient(135deg, #f0f4ff, #e0e7ff);
+        .btn-secondary-gov:hover {
+            background-color: var(--primary-blue);
+            color: white;
         }
         
+        /* Alerts */
         .alert {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid;
+            padding: 15px 20px;
+            margin-bottom: 20px;
         }
         
         .alert-success {
-            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-            color: #065f46;
+            border-color: var(--success-green);
+            background-color: #d4edda;
+            color: #155724;
         }
         
         .alert-danger {
-            background: linear-gradient(135deg, #fee2e2, #fecaca);
-            color: #991b1b;
+            border-color: #dc3545;
+            background-color: #f8d7da;
+            color: #721c24;
         }
         
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        /* Footer */
+        .main-footer {
+            background-color: var(--dark-gray);
+            color: white;
+            padding: 30px 0 10px;
+            margin-top: 50px;
         }
         
-        .section-title {
-            color: #1f2937;
-            font-weight: 700;
-        }
-        
-        .section-subtitle {
-            color: #6b7280;
-        }
-        
-        /* Animation for form */
-        .contact-form {
-            animation: slideInUp 0.6s ease-out;
-        }
-        
-        .contact-info-card {
-            animation: slideInLeft 0.6s ease-out;
-        }
-        
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes slideInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        /* Mobile responsiveness */
+        /* Responsive */
         @media (max-width: 768px) {
-            .contact-info-card,
-            .contact-form {
-                padding: 1.5rem;
-                border-radius: 15px;
+            .site-title {
+                font-size: 22px;
             }
             
-            .contact-info-item {
-                margin-bottom: 1.5rem;
-            }
-            
-            .social-links a {
-                width: 40px;
-                height: 40px;
-                margin-right: 0.5rem;
+            .page-title h1 {
+                font-size: 24px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
+    <!-- Header -->
+    <header class="main-header">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="index.html">
-                <i class="fas fa-code text-primary me-2"></i>TechCorp
-            </a>
+            <div class="row">
+                <div class="col-md-8">
+                    <h1 class="site-title">TechCorp Learning Solutions</h1>
+                    <p class="site-subtitle">Educational Technology Platform - Contact & Support</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <small class="text-light">Last Updated: <?php echo date('F j, Y'); ?></small>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg main-nav">
+        <div class="container">
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index.html#home">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="index.html#about">About</a></li>
-                    <li class="nav-item"><a class="nav-link" href="index.html#services">Services</a></li>
-                    <li class="nav-item"><a class="nav-link" href="index.html#portfolio">Portfolio</a></li>
-                    <li class="nav-item"><a class="nav-link" href="testimonials.php">Testimonials</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="contact.php">Contact</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#" onclick="adminLogin(); return false;">Admin</a></li>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home me-2"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#services">
+                            <i class="fas fa-cogs me-2"></i>Services
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#projects">
+                            <i class="fas fa-folder me-2"></i>Projects
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/testimonials">
+                            <i class="fas fa-comments me-2"></i>Testimonials
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/contact">
+                            <i class="fas fa-envelope me-2"></i>Contact
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="adminLogin(); return false;">
+                            <i class="fas fa-user-shield me-2"></i>Admin
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Page Header -->
-    <section class="py-5 bg-gradient-primary text-white" style="margin-top: 80px;">
+    <!-- Page Title -->
+    <section class="page-title">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-12 text-center">
-                    <h1 class="display-4 fw-bold mb-3">Contact Us</h1>
-                    <p class="lead">Get in touch with our team of experts</p>
-                </div>
+            <div class="text-center">
+                <h1>Contact Us</h1>
+                <p>Get in touch with our educational technology team</p>
             </div>
         </div>
     </section>
 
-    <!-- Contact Section -->
-    <section class="py-5">
-        <div class="container">
-            <!-- Alert Container -->
-            <div id="alertContainer">
-                <?php if ($success): ?>
-                    <div class="alert alert-success alert-dismissible fade show">
-                        <i class="fas fa-check-circle me-2"></i>
-                        Thank you! Your message has been sent successfully. We'll get back to you soon.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php elseif ($error): ?>
-                    <div class="alert alert-danger alert-dismissible fade show">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <?php echo htmlspecialchars($error); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-            </div>
+    <div class="container">
+        <!-- Alert Container -->
+        <div id="alertContainer">
+            <?php if ($success): ?>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Thank you! Your message has been sent successfully. We'll get back to you soon.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php elseif ($error): ?>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <?php echo htmlspecialchars($error); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+        </div>
 
-            <div class="row">
-                <!-- Contact Information -->
-                <div class="col-lg-4 mb-5">
-                    <div class="contact-info-card h-100">
-                        <h3 class="mb-4">Get In Touch</h3>
-                        <p class="mb-4">Ready to start your next project? Contact us today for a free consultation.</p>
-                        
-                        <div class="contact-info-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <h5>Address</h5>
-                            <p>123 Tech Street<br>Digital City, DC 12345</p>
+        <!-- Contact Information Section -->
+        <section class="data-section">
+            <h3 class="section-header">
+                <i class="fas fa-info-circle me-2"></i>Contact Information (Database: contacts table)
+            </h3>
+            <div class="data-box">
+                <div class="data-box-header">
+                    Get in Touch - Educational Support Team
+                </div>
+                <div class="data-box-content">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6">
+                            <div class="contact-info-item">
+                                <h5><i class="fas fa-map-marker-alt me-2"></i>Address</h5>
+                                <p>123 Learning Street<br>Education City, EC 12345</p>
+                            </div>
                         </div>
-                        
-                        <div class="contact-info-item">
-                            <i class="fas fa-phone"></i>
-                            <h5>Phone</h5>
-                            <p>+1 (555) 123-4567</p>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="contact-info-item">
+                                <h5><i class="fas fa-phone me-2"></i>Phone</h5>
+                                <p>+1 (555) 123-4567</p>
+                            </div>
                         </div>
-                        
-                        <div class="contact-info-item">
-                            <i class="fas fa-envelope"></i>
-                            <h5>Email</h5>
-                            <p>info@techcorp.com</p>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="contact-info-item">
+                                <h5><i class="fas fa-envelope me-2"></i>Email</h5>
+                                <p>support@techcorp-learning.com</p>
+                            </div>
                         </div>
-                        
-                        <div class="contact-info-item">
-                            <i class="fas fa-clock"></i>
-                            <h5>Business Hours</h5>
-                            <p>Monday - Friday: 9:00 AM - 6:00 PM<br>
-                            Saturday: 10:00 AM - 4:00 PM<br>
-                            Sunday: Closed</p>
-                        </div>
-                        
-                        <div class="social-links mt-4">
-                            <a href="#" class="text-white me-3"><i class="fab fa-facebook"></i></a>
-                            <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="text-white me-3"><i class="fab fa-linkedin"></i></a>
-                            <a href="#" class="text-white me-3"><i class="fab fa-github"></i></a>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="contact-info-item">
+                                <h5><i class="fas fa-clock me-2"></i>Hours</h5>
+                                <p>Mon-Fri: 9:00 AM - 6:00 PM<br>Sat: 10:00 AM - 4:00 PM</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Contact Form -->
-                <div class="col-lg-8">
-                    <div class="contact-form">
-                        <h3 class="mb-4">Send Us a Message</h3>
-                        <form id="contactForm" method="POST" action="">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="name" class="form-label">Full Name *</label>
-                                    <input type="text" class="form-control" id="name" name="name" required 
-                                           value="<?php echo isset($_POST['name']) ? htmlspecialchars($_POST['name']) : ''; ?>">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="email" class="form-label">Email Address *</label>
-                                    <input type="email" class="form-control" id="email" name="email" required
-                                           value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
-                                </div>
+            </div>
+        </section>
+
+        <!-- Contact Form Section -->
+        <section class="data-section">
+            <h3 class="section-header">
+                <i class="fas fa-paper-plane me-2"></i>Send Message (Saves to: contacts table)
+            </h3>
+            <div class="data-box">
+                <div class="data-box-header">
+                    Contact Form - All submissions stored in database
+                </div>
+                <div class="data-box-content">
+                    <form id="contactForm" method="POST" action="">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required 
+                                       value="<?php echo isset($_POST['name']) ? htmlspecialchars($_POST['name']) : ''; ?>">
                             </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="phone" class="form-label">Phone Number</label>
-                                    <input type="tel" class="form-control" id="phone" name="phone"
-                                           value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="company" class="form-label">Company</label>
-                                    <input type="text" class="form-control" id="company" name="company"
-                                           value="<?php echo isset($_POST['company']) ? htmlspecialchars($_POST['company']) : ''; ?>">
-                                </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" id="email" name="email" required
+                                       value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                             </div>
-                            
-                            <div class="mb-3">
-                                <label for="subject" class="form-label">Subject</label>
-                                <select class="form-control" id="subject" name="subject">
-                                    <option value="">Select a subject</option>
-                                    <option value="Web Development" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Web Development') ? 'selected' : ''; ?>>Web Development</option>
-                                    <option value="Mobile Development" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Mobile Development') ? 'selected' : ''; ?>>Mobile Development</option>
-                                    <option value="Cloud Solutions" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Cloud Solutions') ? 'selected' : ''; ?>>Cloud Solutions</option>
-                                    <option value="Consulting" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Consulting') ? 'selected' : ''; ?>>Consulting</option>
-                                    <option value="Support" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Support') ? 'selected' : ''; ?>>Support</option>
-                                    <option value="Other" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Other') ? 'selected' : ''; ?>>Other</option>
-                                </select>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone"
+                                       value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
                             </div>
-                            
-                            <div class="mb-4">
-                                <label for="message" class="form-label">Message *</label>
-                                <textarea class="form-control" id="message" name="message" rows="6" required 
-                                          placeholder="Tell us about your project..."><?php echo isset($_POST['message']) ? htmlspecialchars($_POST['message']) : ''; ?></textarea>
+                            <div class="col-md-6 mb-3">
+                                <label for="company" class="form-label">Institution/Company</label>
+                                <input type="text" class="form-control" id="company" name="company"
+                                       value="<?php echo isset($_POST['company']) ? htmlspecialchars($_POST['company']) : ''; ?>">
                             </div>
-                            
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-paper-plane me-2"></i>Send Message
-                            </button>
-                        </form>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Subject Category</label>
+                            <select class="form-control" id="subject" name="subject">
+                                <option value="">Select a subject</option>
+                                <option value="Learning Platform" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Learning Platform') ? 'selected' : ''; ?>>Learning Platform</option>
+                                <option value="Technical Support" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Technical Support') ? 'selected' : ''; ?>>Technical Support</option>
+                                <option value="Database Issues" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Database Issues') ? 'selected' : ''; ?>>Database Issues</option>
+                                <option value="Educational Content" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Educational Content') ? 'selected' : ''; ?>>Educational Content</option>
+                                <option value="Account Access" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'Account Access') ? 'selected' : ''; ?>>Account Access</option>
+                                <option value="General Inquiry" <?php echo (isset($_POST['subject']) && $_POST['subject'] === 'General Inquiry') ? 'selected' : ''; ?>>General Inquiry</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="message" class="form-label">Message *</label>
+                            <textarea class="form-control" id="message" name="message" rows="6" required 
+                                      placeholder="Please describe your inquiry or issue..."><?php echo isset($_POST['message']) ? htmlspecialchars($_POST['message']) : ''; ?></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary-gov">
+                            <i class="fas fa-paper-plane me-2"></i>Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Database Information Section -->
+        <section class="data-section">
+            <h3 class="section-header">
+                <i class="fas fa-database me-2"></i>Contact System Information
+            </h3>
+            <div class="data-box">
+                <div class="data-box-header">
+                    Technical Details - Database Integration
+                </div>
+                <div class="data-box-content">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Contact Form Features</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check me-2 text-success"></i>Real-time form validation</li>
+                                <li><i class="fas fa-check me-2 text-success"></i>Database storage (contacts table)</li>
+                                <li><i class="fas fa-check me-2 text-success"></i>Input sanitization</li>
+                                <li><i class="fas fa-check me-2 text-success"></i>Email validation</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Data Security</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-shield-alt me-2 text-primary"></i>Secure data handling</li>
+                                <li><i class="fas fa-shield-alt me-2 text-primary"></i>SQL injection prevention</li>
+                                <li><i class="fas fa-shield-alt me-2 text-primary"></i>XSS protection</li>
+                                <li><i class="fas fa-shield-alt me-2 text-primary"></i>Error logging</li>
+                            </ul>
+                        </div>
                     </div>
+                    <div class="mt-3 p-3" style="background-color: #f8f9fa; border-left: 4px solid var(--primary-blue);">
+                        <small>
+                            <strong>Learning Note:</strong> This contact form demonstrates secure data handling practices 
+                            including input validation, sanitization, and safe database operations.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>TechCorp Learning Solutions</h5>
+                    <p>Educational contact system demonstrating secure form handling and database integration.</p>
+                    <div class="mt-3">
+                        <small>
+                            <i class="fas fa-info-circle me-2"></i>
+                            All contact submissions are securely stored in the database with proper validation.
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/" style="color: #ccc; text-decoration: none;">Home</a></li>
+                        <li><a href="/contact" style="color: #ccc; text-decoration: none;">Contact</a></li>
+                        <li><a href="/testimonials" style="color: #ccc; text-decoration: none;">Testimonials</a></li>
+                        <li><a href="#" onclick="adminLogin(); return false;" style="color: #ccc; text-decoration: none;">Admin Panel</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>Database Table</h6>
+                    <ul class="list-unstyled">
+                        <li style="color: #ccc;"><i class="fas fa-table me-1"></i>contacts - Form submissions</li>
+                        <li style="color: #ccc;"><i class="fas fa-database me-1"></i>Secure data storage</li>
+                        <li style="color: #ccc;"><i class="fas fa-shield-alt me-1"></i>Input validation</li>
+                        <li style="color: #ccc;"><i class="fas fa-lock me-1"></i>SQL injection protection</li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="border-color: #555; margin: 30px 0 20px 0;">
+            <div class="row">
+                <div class="col-md-8">
+                    <small>&copy; <?php echo date('Y'); ?> TechCorp Learning Solutions. All rights reserved.</small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <small>
+                        <i class="fas fa-database me-1"></i>
+                        Powered by PHP & MySQL
+                    </small>
                 </div>
             </div>
         </div>
-    </section>
-
-    <!-- Map Section -->
-    <section class="py-5 bg-light">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
-                    <h3 class="text-center mb-4">Find Us</h3>
-                    <div class="map-container" style="height: 400px; background: #e9ecef; border-radius: 15px; display: flex; align-items: center; justify-content: center;">
-                        <div class="text-center">
-                            <i class="fas fa-map-marked-alt fa-3x text-primary mb-3"></i>
-                            <h5>Interactive Map</h5>
-                            <p class="text-muted">123 Tech Street, Digital City, DC 12345</p>
-                            <!-- In a real implementation, you would embed Google Maps or another mapping service here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Call to Action Section -->
-    <section class="py-5 bg-gradient-primary text-white">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-8 mx-auto text-center">
-                    <h2 class="mb-4">Ready to Start Your Project?</h2>
-                    <p class="mb-4">Let's discuss how we can help bring your ideas to life with our innovative solutions.</p>
-                    <div class="d-flex justify-content-center gap-3 flex-wrap">
-                        <a href="tel:+15551234567" class="btn btn-light btn-lg">
-                            <i class="fas fa-phone me-2"></i>Call Now
-                        </a>
-                        <a href="mailto:info@techcorp.com" class="btn btn-outline-light btn-lg">
-                            <i class="fas fa-envelope me-2"></i>Email Us
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Custom JavaScript -->
-    <script src="assets/js/main.js"></script>
-    
-    <!-- Enhanced Contact Form Script -->
+    <!-- Admin Login & Form Enhancement -->
     <script>
     // Admin popup authentication
     async function adminLogin() {
@@ -676,7 +764,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Phone validation
             if (field.type === 'tel' && value) {
-                // More flexible phone regex that allows numbers starting with 0
                 const phoneRegex = /^[\+]?[0-9][\d\s\-\(\)]{8,15}$/;
                 if (!phoneRegex.test(value)) {
                     isValid = false;
