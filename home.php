@@ -29,7 +29,7 @@ $stats = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechCorp Solutions - Innovative Technology Solutions</title>
+    <title>TechCorp Learning Solutions - Educational Technology Platform</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -37,16 +37,18 @@ $stats = [
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <!-- Simple Government-style CSS -->
     <style>
         :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-            --accent-color: #f093fb;
-            --text-dark: #2d3748;
-            --text-light: #718096;
+            --primary-blue: #2c5aa0;
+            --secondary-blue: #1e3d70;
+            --light-blue: #e8f0fe;
+            --dark-gray: #333333;
+            --medium-gray: #666666;
+            --light-gray: #f8f9fa;
+            --border-gray: #dee2e6;
+            --success-green: #28a745;
+            --warning-orange: #fd7e14;
         }
         
         * {
@@ -56,378 +58,462 @@ $stats = [
         }
         
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Arial', sans-serif;
             line-height: 1.6;
-            color: var(--text-dark);
+            color: var(--dark-gray);
+            background-color: #ffffff;
         }
         
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            opacity: 0.3;
-        }
-        
-        .hero-content {
-            position: relative;
-            z-index: 2;
-        }
-        
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(45deg, #fff, #f0f8ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .hero-subtitle {
-            font-size: 1.25rem;
-            margin-bottom: 2rem;
-            color: rgba(255,255,255,0.9);
-        }
-        
-        .btn-hero {
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin: 0 10px 10px 0;
-        }
-        
-        .btn-hero-primary {
-            background: linear-gradient(45deg, #fff, #f8f9fa);
-            color: var(--primary-color);
-            border: none;
-        }
-        
-        .btn-hero-outline {
-            background: transparent;
+        /* Header */
+        .main-header {
+            background-color: var(--primary-blue);
             color: white;
-            border: 2px solid white;
+            padding: 20px 0;
+            border-bottom: 3px solid var(--secondary-blue);
         }
         
-        .btn-hero:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        .site-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
         }
         
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            position: relative;
-        }
-        
-        .section-subtitle {
-            font-size: 1.1rem;
-            color: var(--text-light);
-            margin-bottom: 3rem;
-        }
-        
-        .service-card {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            border: 1px solid #f1f5f9;
-            height: 100%;
-        }
-        
-        .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        }
-        
-        .service-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            color: white;
-        }
-        
-        .project-card {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            margin-bottom: 2rem;
-            height: 100%;
-        }
-        
-        .project-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        }
-        
-        .project-image {
-            height: 200px;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 3rem;
-        }
-        
-        .testimonial-card {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            text-align: center;
-            height: 100%;
-        }
-        
-        .testimonial-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2rem;
-            margin: 0 auto 1rem;
-        }
-        
-        .rating {
-            color: #ffc107;
-            margin-bottom: 1rem;
-        }
-        
-        .stats-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            padding: 4rem 0;
-            color: white;
-        }
-        
-        .stat-item {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-number {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-label {
-            font-size: 1.1rem;
+        .site-subtitle {
+            font-size: 14px;
+            margin: 5px 0 0 0;
             opacity: 0.9;
         }
         
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.5rem;
+        /* Navigation */
+        .main-nav {
+            background-color: var(--light-blue);
+            border-bottom: 2px solid var(--border-gray);
+            padding: 0;
         }
         
-        .navbar {
-            background: rgba(255,255,255,0.95) !important;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .main-nav .navbar-nav .nav-link {
+            color: var(--primary-blue);
+            font-weight: 500;
+            padding: 15px 20px;
+            border-right: 1px solid var(--border-gray);
         }
         
-        .footer {
-            background: var(--text-dark);
+        .main-nav .navbar-nav .nav-link:hover {
+            background-color: var(--primary-blue);
             color: white;
-            padding: 3rem 0 1rem;
         }
         
+        /* Hero Section */
+        .hero-banner {
+            background-color: var(--light-gray);
+            border: 2px solid var(--border-gray);
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+        
+        .hero-content {
+            text-align: center;
+        }
+        
+        .hero-title {
+            font-size: 32px;
+            color: var(--primary-blue);
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .hero-description {
+            font-size: 16px;
+            color: var(--medium-gray);
+            max-width: 800px;
+            margin: 0 auto 25px;
+        }
+        
+        /* Data Boxes */
+        .data-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-header {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .data-box {
+            border: 2px solid var(--border-gray);
+            background-color: white;
+            margin-bottom: 20px;
+        }
+        
+        .data-box-header {
+            background-color: var(--light-blue);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-gray);
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+        
+        .data-box-content {
+            padding: 20px;
+        }
+        
+        /* Statistics Cards */
+        .stat-card {
+            background-color: white;
+            border: 2px solid var(--border-gray);
+            text-align: center;
+            padding: 25px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--medium-gray);
+            margin-top: 5px;
+        }
+        
+        /* Service Cards */
+        .service-item {
+            background-color: white;
+            border: 1px solid var(--border-gray);
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .service-title {
+            color: var(--primary-blue);
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .service-description {
+            color: var(--medium-gray);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* Project Cards */
+        .project-item {
+            background-color: white;
+            border: 1px solid var(--border-gray);
+            margin-bottom: 15px;
+        }
+        
+        .project-header {
+            background-color: var(--light-gray);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-gray);
+        }
+        
+        .project-title {
+            color: var(--primary-blue);
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .project-content {
+            padding: 15px 20px;
+        }
+        
+        /* Testimonial Cards */
+        .testimonial-item {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-gray);
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .testimonial-text {
+            font-style: italic;
+            color: var(--medium-gray);
+            margin-bottom: 15px;
+        }
+        
+        .testimonial-author {
+            color: var(--primary-blue);
+            font-weight: bold;
+        }
+        
+        .testimonial-rating {
+            color: var(--warning-orange);
+            margin-bottom: 10px;
+        }
+        
+        /* Buttons */
+        .btn-primary-gov {
+            background-color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
+            color: white;
+            padding: 10px 25px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .btn-primary-gov:hover {
+            background-color: var(--secondary-blue);
+            border-color: var(--secondary-blue);
+            color: white;
+        }
+        
+        .btn-secondary-gov {
+            background-color: white;
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            padding: 10px 25px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .btn-secondary-gov:hover {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        
+        /* Footer */
+        .main-footer {
+            background-color: var(--dark-gray);
+            color: white;
+            padding: 30px 0 10px;
+            margin-top: 50px;
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 2.5rem;
+                font-size: 24px;
             }
             
-            .section-title {
-                font-size: 2rem;
+            .site-title {
+                font-size: 22px;
+            }
+            
+            .stat-number {
+                font-size: 28px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+    <!-- Header -->
+    <header class="main-header">
         <div class="container">
-            <a class="navbar-brand text-primary" href="#home">
-                <i class="fas fa-rocket me-2"></i>TechCorp Solutions
-            </a>
+            <div class="row">
+                <div class="col-md-8">
+                    <h1 class="site-title">TechCorp Learning Solutions</h1>
+                    <p class="site-subtitle">Educational Technology Platform - Database-Driven Learning System</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <small class="text-light">Last Updated: <?php echo date('F j, Y'); ?></small>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg main-nav">
+        <div class="container">
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="#home">Home</a>
+                        <a class="nav-link" href="#home">
+                            <i class="fas fa-home me-2"></i>Home
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#services">Services</a>
+                        <a class="nav-link" href="#services">
+                            <i class="fas fa-cogs me-2"></i>Services
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#projects">Projects</a>
+                        <a class="nav-link" href="#projects">
+                            <i class="fas fa-folder me-2"></i>Projects
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#testimonials">Testimonials</a>
+                        <a class="nav-link" href="#testimonials">
+                            <i class="fas fa-comments me-2"></i>Testimonials
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/contact">Contact</a>
+                        <a class="nav-link" href="/contact">
+                            <i class="fas fa-envelope me-2"></i>Contact
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="adminLogin(); return false;">Admin</a>
+                        <a class="nav-link" href="#" onclick="adminLogin(); return false;">
+                            <i class="fas fa-user-shield me-2"></i>Admin
+                        </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section id="home" class="hero-section">
+    <!-- Hero Banner -->
+    <section class="hero-banner" id="home">
         <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6">
-                    <div class="hero-content">
-                        <h1 class="hero-title">Innovative Technology Solutions</h1>
-                        <p class="hero-subtitle">
-                            We transform ideas into powerful digital experiences using cutting-edge technology and creative design. 
-                            Building the future, one project at a time.
-                        </p>
-                        <div>
-                            <a href="#services" class="btn-hero btn-hero-primary">Our Services</a>
-                            <a href="/contact" class="btn-hero btn-hero-outline">Get Started</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="text-center">
-                        <i class="fas fa-laptop-code" style="font-size: 15rem; color: rgba(255,255,255,0.1);"></i>
-                    </div>
+            <div class="hero-content">
+                <h2 class="hero-title">Welcome to Our Learning Management System</h2>
+                <p class="hero-description">
+                    This is a database-driven educational platform designed for learning web development concepts. 
+                    All data displayed on this website is dynamically fetched from our database, demonstrating 
+                    real-world application development practices.
+                </p>
+                <div class="mt-4">
+                    <a href="#services" class="btn btn-primary-gov me-3">
+                        <i class="fas fa-arrow-right me-2"></i>Explore Services
+                    </a>
+                    <a href="/contact" class="btn btn-secondary-gov">
+                        <i class="fas fa-phone me-2"></i>Get Started
+                    </a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Stats Section -->
-    <section class="stats-section">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['projects']; ?>+</div>
-                        <div class="stat-label">Projects Completed</div>
-                    </div>
+    <!-- Statistics Section -->
+    <section class="container data-section">
+        <h3 class="section-header">
+            <i class="fas fa-chart-bar me-2"></i>Platform Statistics (Database Records)
+        </h3>
+        <div class="row">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <span class="stat-number"><?php echo $stats['projects']; ?></span>
+                    <div class="stat-label">Active Projects</div>
+                    <small class="text-muted">From: projects table</small>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['clients']; ?>+</div>
-                        <div class="stat-label">Happy Clients</div>
-                    </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <span class="stat-number"><?php echo $stats['clients']; ?></span>
+                    <div class="stat-label">Registered Clients</div>
+                    <small class="text-muted">From: projects table</small>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['services']; ?>+</div>
-                        <div class="stat-label">Services Offered</div>
-                    </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <span class="stat-number"><?php echo $stats['services']; ?></span>
+                    <div class="stat-label">Available Services</div>
+                    <small class="text-muted">From: services table</small>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo $stats['testimonials']; ?>+</div>
-                        <div class="stat-label">Client Reviews</div>
-                    </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <span class="stat-number"><?php echo $stats['testimonials']; ?></span>
+                    <div class="stat-label">Client Reviews</div>
+                    <small class="text-muted">From: testimonials table</small>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Services Section -->
-    <section id="services" class="py-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 text-center mb-5">
-                    <h2 class="section-title">Our Services</h2>
-                    <p class="section-subtitle">Comprehensive solutions tailored to your business needs</p>
-                </div>
+    <section class="container data-section" id="services">
+        <h3 class="section-header">
+            <i class="fas fa-tools me-2"></i>Our Services (Database: services table)
+        </h3>
+        <div class="data-box">
+            <div class="data-box-header">
+                Available Services - Dynamically Loaded from Database
             </div>
-            <div class="row">
-                <?php foreach ($featuredServices as $service): ?>
-                <div class="col-lg-4 col-md-6">
-                    <div class="service-card">
-                        <div class="service-icon">
-                            <i class="<?php echo htmlspecialchars($service['icon']); ?>"></i>
+            <div class="data-box-content">
+                <?php if (!empty($featuredServices)): ?>
+                    <div class="row">
+                        <?php foreach ($featuredServices as $service): ?>
+                        <div class="col-lg-6 col-md-12">
+                            <div class="service-item">
+                                <div class="service-title">
+                                    <i class="<?php echo htmlspecialchars($service['icon'] ?? 'fas fa-cog'); ?> me-2"></i>
+                                    <?php echo htmlspecialchars($service['title']); ?>
+                                </div>
+                                <div class="service-description">
+                                    <?php echo htmlspecialchars($service['description']); ?>
+                                </div>
+                                <?php if (!empty($service['price_range'])): ?>
+                                <div class="mt-2">
+                                    <strong>Price Range:</strong> <?php echo htmlspecialchars($service['price_range']); ?>
+                                </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <h4><?php echo htmlspecialchars($service['title']); ?></h4>
-                        <p class="text-muted mb-3"><?php echo htmlspecialchars($service['description']); ?></p>
-                        <?php if (!empty($service['price_range'])): ?>
-                        <div class="text-primary fw-bold"><?php echo htmlspecialchars($service['price_range']); ?></div>
-                        <?php endif; ?>
+                        <?php endforeach; ?>
                     </div>
-                </div>
-                <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No services found in database. Please add services through the admin panel.
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </section>
 
     <!-- Projects Section -->
     <?php if (!empty($featuredProjects)): ?>
-    <section id="projects" class="py-5 bg-light">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 text-center mb-5">
-                    <h2 class="section-title">Featured Projects</h2>
-                    <p class="section-subtitle">Showcasing our latest work and innovations</p>
-                </div>
+    <section class="container data-section" id="projects">
+        <h3 class="section-header">
+            <i class="fas fa-briefcase me-2"></i>Featured Projects (Database: projects table)
+        </h3>
+        <div class="data-box">
+            <div class="data-box-header">
+                Project Portfolio - Live Data from Database
             </div>
-            <div class="row">
-                <?php foreach ($featuredProjects as $project): ?>
-                <div class="col-lg-4 col-md-6">
-                    <div class="project-card">
-                        <div class="project-image">
-                            <?php if (!empty($project['image_url'])): ?>
-                                <img src="<?php echo htmlspecialchars($project['image_url']); ?>" alt="<?php echo htmlspecialchars($project['title']); ?>" class="w-100 h-100" style="object-fit: cover;">
-                            <?php else: ?>
-                                <i class="fas fa-project-diagram"></i>
-                            <?php endif; ?>
-                        </div>
-                        <div class="p-3">
-                            <h5><?php echo htmlspecialchars($project['title']); ?></h5>
-                            <p class="text-muted"><?php echo htmlspecialchars(substr($project['description'], 0, 100)) . '...'; ?></p>
-                            <?php if (!empty($project['project_url'])): ?>
-                            <a href="<?php echo htmlspecialchars($project['project_url']); ?>" class="btn btn-primary btn-sm">
-                                <i class="fas fa-external-link-alt me-1"></i>View Project
-                            </a>
-                            <?php endif; ?>
+            <div class="data-box-content">
+                <div class="row">
+                    <?php foreach ($featuredProjects as $project): ?>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="project-item">
+                            <div class="project-header">
+                                <h5 class="project-title"><?php echo htmlspecialchars($project['title']); ?></h5>
+                            </div>
+                            <div class="project-content">
+                                <p><?php echo htmlspecialchars(substr($project['description'], 0, 150)) . '...'; ?></p>
+                                <?php if (!empty($project['client_name'])): ?>
+                                <div class="mb-2">
+                                    <strong>Client:</strong> <?php echo htmlspecialchars($project['client_name']); ?>
+                                </div>
+                                <?php endif; ?>
+                                <?php if (!empty($project['project_url'])): ?>
+                                <a href="<?php echo htmlspecialchars($project['project_url']); ?>" class="btn btn-secondary-gov btn-sm" target="_blank">
+                                    <i class="fas fa-external-link-alt me-1"></i>View Project
+                                </a>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+    <?php else: ?>
+    <section class="container data-section" id="projects">
+        <h3 class="section-header">
+            <i class="fas fa-briefcase me-2"></i>Featured Projects (Database: projects table)
+        </h3>
+        <div class="data-box">
+            <div class="data-box-content">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No featured projects found in database. Please add projects through the admin panel.
+                </div>
             </div>
         </div>
     </section>
@@ -435,45 +521,150 @@ $stats = [
 
     <!-- Testimonials Section -->
     <?php if (!empty($featuredTestimonials)): ?>
-    <section id="testimonials" class="py-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 text-center mb-5">
-                    <h2 class="section-title">What Our Clients Say</h2>
-                    <p class="section-subtitle">Real feedback from satisfied customers</p>
-                </div>
+    <section class="container data-section" id="testimonials">
+        <h3 class="section-header">
+            <i class="fas fa-star me-2"></i>Client Testimonials (Database: testimonials table)
+        </h3>
+        <div class="data-box">
+            <div class="data-box-header">
+                Customer Feedback - Retrieved from Database
             </div>
-            <div class="row">
-                <?php foreach ($featuredTestimonials as $testimonial): ?>
-                <div class="col-lg-4 col-md-6">
-                    <div class="testimonial-card">
-                        <div class="testimonial-avatar">
-                            <?php if (!empty($testimonial['image_url'])): ?>
-                                <img src="<?php echo htmlspecialchars($testimonial['image_url']); ?>" alt="<?php echo htmlspecialchars($testimonial['name']); ?>" class="w-100 h-100 rounded-circle" style="object-fit: cover;">
-                            <?php else: ?>
-                                <i class="fas fa-user"></i>
-                            <?php endif; ?>
+            <div class="data-box-content">
+                <div class="row">
+                    <?php foreach ($featuredTestimonials as $testimonial): ?>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="testimonial-item">
+                            <div class="testimonial-rating">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <i class="fas fa-star<?php echo $i <= $testimonial['rating'] ? '' : ' text-muted'; ?>"></i>
+                                <?php endfor; ?>
+                            </div>
+                            <div class="testimonial-text">
+                                "<?php echo htmlspecialchars($testimonial['testimonial']); ?>"
+                            </div>
+                            <div class="testimonial-author">
+                                <?php echo htmlspecialchars($testimonial['name']); ?>
+                                <?php if (!empty($testimonial['position']) && !empty($testimonial['company'])): ?>
+                                <br><small class="text-muted">
+                                    <?php echo htmlspecialchars($testimonial['position']); ?> at <?php echo htmlspecialchars($testimonial['company']); ?>
+                                </small>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <div class="rating">
-                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <i class="fas fa-star<?php echo $i <= $testimonial['rating'] ? '' : ' text-muted'; ?>"></i>
-                            <?php endfor; ?>
-                        </div>
-                        <p class="mb-3">"<?php echo htmlspecialchars($testimonial['testimonial']); ?>"</p>
-                        <h6 class="mb-1"><?php echo htmlspecialchars($testimonial['name']); ?></h6>
-                        <?php if (!empty($testimonial['position']) && !empty($testimonial['company'])): ?>
-                        <small class="text-muted"><?php echo htmlspecialchars($testimonial['position']); ?> at <?php echo htmlspecialchars($testimonial['company']); ?></small>
-                        <?php endif; ?>
                     </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
+                <div class="text-center mt-3">
+                    <a href="/testimonials" class="btn btn-secondary-gov">
+                        <i class="fas fa-comments me-2"></i>View All Testimonials
+                    </a>
+                </div>
             </div>
-            <div class="text-center">
-                <a href="/testimonials" class="btn btn-outline-primary">View All Testimonials</a>
+        </div>
+    </section>
+    <?php else: ?>
+    <section class="container data-section" id="testimonials">
+        <h3 class="section-header">
+            <i class="fas fa-star me-2"></i>Client Testimonials (Database: testimonials table)
+        </h3>
+        <div class="data-box">
+            <div class="data-box-content">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No testimonials found in database. Please add testimonials through the admin panel.
+                </div>
             </div>
         </div>
     </section>
     <?php endif; ?>
+
+    <!-- Database Information Section -->
+    <section class="container data-section">
+        <h3 class="section-header">
+            <i class="fas fa-database me-2"></i>Database Information - Learning Platform
+        </h3>
+        <div class="data-box">
+            <div class="data-box-header">
+                System Technical Details
+            </div>
+            <div class="data-box-content">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Database Tables</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-table me-2 text-primary"></i><strong>services</strong> - Service offerings</li>
+                            <li><i class="fas fa-table me-2 text-primary"></i><strong>projects</strong> - Project portfolio</li>
+                            <li><i class="fas fa-table me-2 text-primary"></i><strong>testimonials</strong> - Client reviews</li>
+                            <li><i class="fas fa-table me-2 text-primary"></i><strong>contacts</strong> - Contact submissions</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Learning Objectives</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check me-2 text-success"></i>Database Integration</li>
+                            <li><i class="fas fa-check me-2 text-success"></i>Dynamic Content Loading</li>
+                            <li><i class="fas fa-check me-2 text-success"></i>CRUD Operations</li>
+                            <li><i class="fas fa-check me-2 text-success"></i>Admin Panel Management</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-3 p-3" style="background-color: #f8f9fa; border-left: 4px solid var(--primary-blue);">
+                    <small>
+                        <strong>Note for Students:</strong> This website demonstrates how data flows from a database to the frontend. 
+                        All content you see here is dynamically generated from our database tables, showing real-world web development practices.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Assignment Learning Platform</h5>
+                    <p>Educational database-driven website demonstrating web development concepts.</p>
+                    <div class="mt-3">
+                        <small>
+                            <i class="fas fa-info-circle me-2"></i>
+                            This is a learning project showcasing PHP, MySQL, and web development practices.
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/" style="color: #ccc; text-decoration: none;">Home</a></li>
+                        <li><a href="/contact" style="color: #ccc; text-decoration: none;">Contact</a></li>
+                        <li><a href="/testimonials" style="color: #ccc; text-decoration: none;">Testimonials</a></li>
+                        <li><a href="#" onclick="adminLogin(); return false;" style="color: #ccc; text-decoration: none;">Admin Panel</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>Database Tables</h6>
+                    <ul class="list-unstyled">
+                        <li style="color: #ccc;"><i class="fas fa-table me-1"></i>services</li>
+                        <li style="color: #ccc;"><i class="fas fa-table me-1"></i>projects</li>
+                        <li style="color: #ccc;"><i class="fas fa-table me-1"></i>testimonials</li>
+                        <li style="color: #ccc;"><i class="fas fa-table me-1"></i>contacts</li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="border-color: #555; margin: 30px 0 20px 0;">
+            <div class="row">
+                <div class="col-md-8">
+                    <small>&copy; <?php echo date('Y'); ?> Assignment Learning Platform. All rights reserved.</small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <small>
+                        <i class="fas fa-database me-1"></i>
+                        Powered by PHP & MySQL
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
