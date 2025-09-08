@@ -54,6 +54,7 @@ A **complete, enterprise-grade web application** featuring:
 - **Supabase** - Managed PostgreSQL database
 - **Environment Variables** - Secure configuration management
 - **Git Version Control** - Professional development workflow
+- **Github Actions** - `CI/CD` pipelines for automated testing and deployment
 
 ## 📁 Project Structure
 
@@ -72,7 +73,7 @@ techcorp-solutions/
 
 ## 🚀 Features
 
-### ✅ Homepage
+###  Homepage
 
 - Hero section with call-to-action
 - Services showcase
@@ -80,21 +81,21 @@ techcorp-solutions/
 - Client testimonials
 - Contact information
 
-### ✅ Contact System
+###  Contact System
 
 - Responsive contact form
 - Real-time validation
 - Database storage
 - Admin notifications
 
-### ✅ Admin Panel
+###  Admin Panel
 
 - Secure login system
 - Contact management
 - Testimonial management
 - Dashboard statistics
 
-### ✅ Technical Excellence
+###  Technical Excellence
 
 - Mobile-first responsive design
 - Cross-browser compatibility
@@ -102,7 +103,7 @@ techcorp-solutions/
 - Performance optimized
 - Security best practices
 
-## 🗄️ Database Schema
+##  Database Schema
 
 ### Tables:
 
@@ -113,7 +114,7 @@ techcorp-solutions/
 - **blog_posts** - Content management
 - **newsletter_subscribers** - Email list
 
-## 🔧 Local Development
+##  Local Development
 
 ### Prerequisites
 
@@ -150,29 +151,6 @@ Detailed guide: [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
 - Password: `admin123`
 
 _Change credentials in production_
-
-## 📊 Performance
-
-- **Lighthouse Score:** 95+ across all metrics
-- **Loading Time:** < 2 seconds
-- **Mobile Responsive:** 100%
-- **Cross-browser:** Chrome, Firefox, Safari, Edge
-
-## 🎨 Design Features
-
-- **Modern UI/UX** - Clean, professional design
-- **Smooth Animations** - CSS transitions and effects
-- **Interactive Elements** - Hover states and feedback
-- **Consistent Branding** - Color scheme and typography
-- **Accessibility** - ARIA labels and keyboard navigation
-
-## 🔧 Browser Support
-
-- ✅ Chrome 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Edge 90+
-- ✅ Mobile browsers
 
 ## 📞 Support
 
