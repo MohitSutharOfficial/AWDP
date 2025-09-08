@@ -313,7 +313,8 @@ $stats = [
             <div class="row">
                 <div class="col-md-8">
                     <h1 class="site-title">TechCorp Learning Solutions</h1>
-                    <p class="site-subtitle">Educational Technology Platform - Database-Driven Learning System</p>
+                    <p class="site-subtitle">Educational Technology Platform - Database-Driven Learning System ;username(admin),password(admin123)
+                    </p>
                 </div>
                 <div class="col-md-4 text-end">
                     <small class="text-light">Last Updated: <?php echo date('F j, Y'); ?></small>
