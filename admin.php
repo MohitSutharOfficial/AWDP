@@ -329,7 +329,7 @@ try {
                                             <?php endforeach; ?>
                                         </div>
                                         <div class="text-center mt-3">
-                                            <button class="btn btn-outline-primary btn-sm" data-tab="contacts" onclick="showTab('contacts')">
+                                            <button class="btn btn-outline-primary btn-sm" data-tab="contacts">
                                                 <i class="fas fa-arrow-right me-1"></i>View All Contacts
                                             </button>
                                         </div>
@@ -376,7 +376,7 @@ try {
                                             <?php endforeach; ?>
                                         </div>
                                         <div class="text-center mt-3">
-                                            <button class="btn btn-outline-warning btn-sm" data-tab="testimonials" onclick="showTab('testimonials')">
+                                            <button class="btn btn-outline-warning btn-sm" data-tab="testimonials">
                                                 <i class="fas fa-arrow-right me-1"></i>View All Testimonials
                                             </button>
                                         </div>
@@ -401,7 +401,7 @@ try {
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-3 mb-2">
-                                            <button class="btn btn-outline-primary w-100" data-tab="contacts" onclick="showTab('contacts')">
+                                            <button class="btn btn-outline-primary w-100" data-tab="contacts">
                                                 <i class="fas fa-envelope me-2"></i>Manage Contacts
                                             </button>
                                         </div>
@@ -411,7 +411,7 @@ try {
                                             </button>
                                         </div>
                                         <div class="col-md-3 mb-2">
-                                            <button class="btn btn-outline-info w-100" data-tab="database" onclick="showTab('database')">
+                                            <button class="btn btn-outline-info w-100" data-tab="database">
                                                 <i class="fas fa-database me-2"></i>Database Tools
                                             </button>
                                         </div>
@@ -916,6 +916,7 @@ try {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
+                tab.style.display = 'none';
             });
             
             // Remove active class from all nav links
@@ -927,6 +928,10 @@ try {
             const selectedTab = document.getElementById(tabName);
             if (selectedTab) {
                 selectedTab.classList.add('active');
+                selectedTab.style.display = 'block';
+                console.log('Tab shown:', tabName);
+            } else {
+                console.error('Tab not found:', tabName);
             }
             
             // Add active class to clicked nav link
@@ -1157,12 +1162,15 @@ try {
             if (document.getElementById('saveTestimonialBtn')) {
                 document.getElementById('saveTestimonialBtn').addEventListener('click', saveTestimonial);
             }
+            if (document.getElementById('markRepliedBtn')) {
+                document.getElementById('markRepliedBtn').addEventListener('click', markContactAsReplied);
+            }
             
             console.log('Admin panel initialized successfully with full functionality');
         });
         
         function setupNavigation() {
-            // Set up navigation event listeners
+            // Set up navigation event listeners for sidebar
             document.querySelectorAll('.admin-nav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
                     // Don't prevent default for logout link
@@ -1173,11 +1181,16 @@ try {
                     e.preventDefault();
                     const tabName = this.getAttribute('data-tab');
                     if (tabName) {
-                        console.log('Navigation clicked for tab:', tabName);
+                        console.log('Sidebar navigation clicked for tab:', tabName);
                         showTab(tabName);
                     }
                 });
             });
+            
+            // Initialize dashboard tab as active on page load
+            setTimeout(() => {
+                showTab('dashboard');
+            }, 100);
         }
         
         function setupEventListeners() {
@@ -1246,9 +1259,18 @@ try {
                 }
             });
             
-            // Set up modal event listeners
-            document.getElementById('markRepliedBtn').addEventListener('click', markContactAsReplied);
-            document.getElementById('saveTestimonialBtn').addEventListener('click', saveTestimonial);
+            // Set up tab navigation buttons using event delegation
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('[data-tab]');
+                if (!target) return;
+                
+                e.preventDefault();
+                const tabName = target.getAttribute('data-tab');
+                if (tabName) {
+                    console.log('Tab button clicked for:', tabName);
+                    showTab(tabName);
+                }
+            });
             
             // Set up search functionality
             const searchContacts = document.getElementById('searchContacts');
@@ -1256,14 +1278,12 @@ try {
             
             if (searchContacts) {
                 searchContacts.addEventListener('input', function() {
-                    // Implement search functionality
                     console.log('Searching contacts:', this.value);
                 });
             }
             
             if (searchTestimonials) {
                 searchTestimonials.addEventListener('input', function() {
-                    // Implement search functionality
                     console.log('Searching testimonials:', this.value);
                 });
             }
@@ -1294,9 +1314,7 @@ try {
                     });
                 });
             }
-            
-            console.log('Admin panel initialized successfully with full functionality');
-        });
+        }
     </script>
 </body>
 </html>
